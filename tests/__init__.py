@@ -1,0 +1,3 @@
+"""
+ExpenseMate Test Suite Package
+"""

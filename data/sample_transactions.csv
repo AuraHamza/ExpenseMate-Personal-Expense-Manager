@@ -1,0 +1,10 @@
+type,amount,date,category,description
+income,3500.00,2026-09-01,Salary,Monthly Salary Paycheck
+expense,450.00,2026-09-02,Housing & Utilities,Electricity and Water Bills
+expense,125.50,2026-09-05,Groceries,Weekly Supermarket Run
+expense,42.00,2026-09-08,Transportation,Metro Card Refill and Fuel
+expense,85.00,2026-09-12,Food & Dining,Dinner with Colleagues
+expense,60.00,2026-09-15,Entertainment & Leisure,Cinema and Streaming
+income,250.00,2026-09-18,Investments,Dividend Payout
+expense,95.00,2026-09-20,Healthcare & Medical,Prescription and Pharmacy
+expense,30.00,2026-09-22,Miscellaneous,Books and Stationery
