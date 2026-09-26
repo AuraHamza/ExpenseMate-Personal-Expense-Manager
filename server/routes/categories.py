@@ -60,5 +60,7 @@ def create_category():
         cat_id = repo.create(name)
         new_cat = repo.get_by_id(cat_id)
         return jsonify({"success": True, "data": new_cat}), 201
+    except ValueError as e:
+        return jsonify({"success": False, "error": str(e)}), 409
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500

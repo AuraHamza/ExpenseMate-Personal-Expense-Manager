@@ -10,7 +10,7 @@ automatic budget alert notifications received from the server.
 from datetime import datetime
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
-from typing import Optional, Callable, Dict, Any
+from typing import Optional, Callable, Dict, Any, Tuple
 from client.api_client import ApiClient, ApiClientError
 
 
@@ -118,9 +118,18 @@ class TransactionForm(ttk.LabelFrame):
         name = simpledialog.askstring(
             "Add Category", "Enter new category name:", parent=self
         )
-        if name and name.strip():
+        if name is not None:
+            clean_name = name.strip()
+            if not clean_name:
+                messagebox.showerror("Error", "Category name cannot be empty.")
+                return
+            if any(c.lower() == clean_name.lower() for c in self.categories_map.keys()):
+                messagebox.showerror(
+                    "Error", f"Category '{clean_name}' already exists."
+                )
+                return
             try:
-                created = self.api_client.create_category(name.strip())
+                created = self.api_client.create_category(clean_name)
                 self.refresh_categories()
                 self.category_var.set(created["name"])
                 messagebox.showinfo(
@@ -129,17 +138,15 @@ class TransactionForm(ttk.LabelFrame):
             except ApiClientError as e:
                 messagebox.showerror("Error", e.message)
 
-    def _submit(self):
-        """Validate and dispatch transaction creation to API."""
-        trans_type = self.type_var.get()
+    def _validate_form_inputs(self) -> Optional[Tuple[float, str, int]]:
+        """Validate form fields; return (amount, date_str, cat_id) or None on failure."""
         amount_str = self.amount_var.get().strip()
         date_str = self.date_var.get().strip()
         cat_name = self.category_var.get()
-        description = self.desc_var.get().strip()
 
         if not amount_str:
             messagebox.showwarning("Validation Error", "Please enter an amount.")
-            return
+            return None
 
         try:
             amount = float(amount_str)
@@ -149,45 +156,52 @@ class TransactionForm(ttk.LabelFrame):
             messagebox.showwarning(
                 "Validation Error", "Amount must be a positive number."
             )
-            return
+            return None
 
         if not date_str:
             messagebox.showwarning(
                 "Validation Error", "Please enter a valid date (YYYY-MM-DD)."
             )
-            return
+            return None
 
         cat_id = self.categories_map.get(cat_name)
         if not cat_id:
             messagebox.showwarning("Validation Error", "Please select a category.")
+            return None
+
+        return amount, date_str, cat_id
+
+    def _handle_transaction_alert(self, alert: Optional[Dict[str, Any]]) -> None:
+        """Show an appropriate dialog for budget alert or success message."""
+        if alert and alert.get("has_alert"):
+            level = alert.get("level", "WARNING")
+            msg = alert.get("message", "")
+            if level == "ALERT":
+                messagebox.showerror("Budget Limit Exceeded!", msg)
+            else:
+                messagebox.showwarning("Budget Warning (80% reached)", msg)
+        else:
+            messagebox.showinfo("Success", "Transaction recorded successfully.")
+
+    def _submit(self):
+        """Validate and dispatch transaction creation to API."""
+        validated = self._validate_form_inputs()
+        if validated is None:
             return
+        amount, date_str, cat_id = validated
 
         try:
             result = self.api_client.create_transaction(
-                trans_type=trans_type,
+                trans_type=self.type_var.get(),
                 amount=amount,
                 date_str=date_str,
                 category_id=cat_id,
-                description=description,
+                description=self.desc_var.get().strip(),
             )
-
-            # Check if an alert was triggered
-            alert = result.get("alert")
-            if alert and alert.get("has_alert"):
-                level = alert.get("level", "WARNING")
-                msg = alert.get("message", "")
-                if level == "ALERT":
-                    messagebox.showerror("Budget Limit Exceeded!", msg)
-                else:
-                    messagebox.showwarning("Budget Warning (80% reached)", msg)
-            else:
-                messagebox.showinfo("Success", "Transaction recorded successfully.")
-
+            self._handle_transaction_alert(result.get("alert"))
             self.clear_form()
-
             if self.on_success:
                 self.on_success()
-
         except ApiClientError as e:
             messagebox.showerror("Error", e.message)
 

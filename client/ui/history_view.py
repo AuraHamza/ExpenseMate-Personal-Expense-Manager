@@ -7,9 +7,10 @@ Supports filtering by date range, category, and transaction type,
 with options to edit and delete individual transactions.
 """
 
+from datetime import datetime
 import tkinter as tk
 from tkinter import ttk, messagebox
-from typing import Optional, Callable, Dict, Any, List
+from typing import Optional, Callable, Dict, Any, List, Tuple
 from client.api_client import ApiClient, ApiClientError
 from client.ui.transaction_form import TransactionEditDialog
 
@@ -160,18 +161,50 @@ class HistoryView(ttk.Frame):
         except ApiClientError:
             pass
 
+    def _validate_date_filters(
+        self, start_date: Optional[str], end_date: Optional[str]
+    ) -> bool:
+        """Validate individual date formats and range order.
+        Shows an error dialog and returns False on the first problem found."""
+        for label, value in (("From", start_date), ("To", end_date)):
+            if value:
+                try:
+                    datetime.strptime(value, "%Y-%m-%d")
+                except ValueError:
+                    messagebox.showerror(
+                        "Invalid Date",
+                        f"{label} date '{value}' must be in YYYY-MM-DD format.",
+                    )
+                    return False
+
+        if start_date and end_date and start_date > end_date:
+            messagebox.showerror(
+                "Invalid Date Range",
+                f"From date ({start_date}) cannot be after To date ({end_date}).",
+            )
+            return False
+
+        return True
+
+    def _resolve_filter_params(self) -> Tuple[Optional[int], Optional[str]]:
+        """Read category and type dropdowns; return (category_id, trans_type)."""
+        cat_name = self.cat_filter_var.get()
+        cat_id = (
+            self.categories_map.get(cat_name) if cat_name != "All Categories" else None
+        )
+        t_type = self.type_filter_var.get()
+        trans_type = None if t_type == "All" else t_type
+        return cat_id, trans_type
+
     def load_transactions(self):
         """Query transactions with current filter values."""
         start_date = self.start_date_var.get().strip() or None
         end_date = self.end_date_var.get().strip() or None
 
-        cat_name = self.cat_filter_var.get()
-        cat_id = (
-            self.categories_map.get(cat_name) if cat_name != "All Categories" else None
-        )
+        if not self._validate_date_filters(start_date, end_date):
+            return
 
-        t_type = self.type_filter_var.get()
-        trans_type = None if t_type == "All" else t_type
+        cat_id, trans_type = self._resolve_filter_params()
 
         try:
             items = self.api_client.get_transactions(

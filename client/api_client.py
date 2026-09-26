@@ -210,11 +210,15 @@ class ApiClient:
     # -------------------------------------------------------------
     # Analytics
     # -------------------------------------------------------------
-    def get_analytics(self, year: int, month: Optional[int] = None) -> Dict[str, Any]:
+    def get_analytics(
+        self, year: int, month: Optional[int] = None, category_id: Optional[int] = None
+    ) -> Dict[str, Any]:
         """Retrieve complete financial report and chart data."""
         params = {"year": year}
         if month is not None:
             params["month"] = month
+        if category_id is not None:
+            params["category_id"] = category_id
         return self._request("GET", "/api/analytics", params=params)
 
     # -------------------------------------------------------------
@@ -238,6 +242,49 @@ class ApiClient:
         except requests.RequestException as e:
             raise ApiClientError(f"CSV upload error: {str(e)}")
 
+    def _build_export_params(
+        self,
+        start_date: Optional[str],
+        end_date: Optional[str],
+        category_id: Optional[int],
+        trans_type: Optional[str],
+    ) -> dict:
+        """Build query-string parameter dict for the CSV export request."""
+        params: dict = {}
+        if start_date:
+            params["start_date"] = start_date
+        if end_date:
+            params["end_date"] = end_date
+        if category_id is not None:
+            params["category_id"] = category_id
+        if trans_type:
+            params["type"] = trans_type
+        return params
+
+    def _validate_csv_response(self, resp: Any) -> None:
+        """Raise ApiClientError if the response is not a valid CSV reply."""
+        if not resp.ok:
+            try:
+                err_body = resp.json()
+                err_msg = err_body.get("error") or err_body.get("message") or ""
+                raise ApiClientError(
+                    f"CSV export failed (HTTP {resp.status_code}): {err_msg}",
+                    status_code=resp.status_code,
+                )
+            except (ValueError, KeyError):
+                raise ApiClientError(
+                    f"CSV export failed with HTTP {resp.status_code}.",
+                    status_code=resp.status_code,
+                )
+
+        content_type = resp.headers.get("Content-Type", "")
+        if "text/csv" not in content_type:
+            raise ApiClientError(
+                "Export failed: server returned an unexpected response "
+                f"(Content-Type: {content_type!r}). "
+                "Ensure the ExpenseMate backend is running on the correct port."
+            )
+
     def export_csv_file(
         self,
         output_file_path: str,
@@ -247,27 +294,23 @@ class ApiClient:
         trans_type: Optional[str] = None,
     ) -> str:
         """Download transactions CSV from server and save to local disk."""
-        params = {}
-        if start_date:
-            params["start_date"] = start_date
-        if end_date:
-            params["end_date"] = end_date
-        if category_id is not None:
-            params["category_id"] = category_id
-        if trans_type:
-            params["type"] = trans_type
-
+        params = self._build_export_params(start_date, end_date, category_id, trans_type)
         try:
             resp = self.session.get(
                 self._url("/api/csv/export"),
                 params=params,
                 timeout=self.timeout,
             )
-            if not resp.ok:
-                raise ApiClientError(f"CSV export failed with HTTP {resp.status_code}.")
-
+            self._validate_csv_response(resp)
             with open(output_file_path, "w", encoding="utf-8", newline="") as f:
                 f.write(resp.text)
             return output_file_path
+        except requests.ConnectionError:
+            raise ApiClientError(
+                f"Could not connect to ExpenseMate server at {self.base_url}. "
+                "Please verify that the backend server is running."
+            )
+        except requests.Timeout:
+            raise ApiClientError("CSV export request timed out. Please try again.")
         except requests.RequestException as e:
             raise ApiClientError(f"CSV export error: {str(e)}")

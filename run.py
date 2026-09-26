@@ -12,6 +12,7 @@ Single-command entry point:
 
 import sys
 import time
+import socket
 import argparse
 import threading
 from typing import Optional
@@ -53,6 +54,20 @@ def wait_for_server(api_client: ApiClient, timeout: float = 5.0) -> bool:
     return False
 
 
+def _find_available_port(preferred_port: int, host: str = "127.0.0.1") -> int:
+    """Return preferred_port if free, otherwise scan upward for the next free port."""
+    port = preferred_port
+    while port < preferred_port + 100:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            try:
+                s.bind((host, port))
+                return port
+            except OSError:
+                port += 1
+    raise OSError(f"No free port found in range {preferred_port}–{preferred_port + 99}.")
+
+
 def main():
     parser = argparse.ArgumentParser(description="ExpenseMate — Personal Expense Manager")
     parser.add_argument("--host", default="127.0.0.1", help="Server host (default: 127.0.0.1)")
@@ -85,7 +100,17 @@ def main():
 
     # Mode C: Full Application (Server + Desktop Client together)
     print("[ExpenseMate] Starting Flask server in background thread...")
-    server_thread = ServerThread(host=args.host, port=args.port, db_path=args.db_path)
+
+    # Detect port conflicts before Flask tries to bind
+    actual_port = _find_available_port(args.port, host=args.host)
+    if actual_port != args.port:
+        print(
+            f"[ExpenseMate WARNING] Port {args.port} is already in use "
+            f"(possibly another application). Binding Flask to port {actual_port} instead."
+        )
+    base_url = f"http://{args.host}:{actual_port}"
+
+    server_thread = ServerThread(host=args.host, port=actual_port, db_path=args.db_path)
     server_thread.start()
 
     api_client = ApiClient(base_url=base_url)

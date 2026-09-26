@@ -62,6 +62,9 @@ def init_db(db_path: Optional[str] = None) -> None:
                 name TEXT NOT NULL UNIQUE COLLATE NOCASE
             );
             """)
+        cursor.execute("""
+            CREATE UNIQUE INDEX IF NOT EXISTS idx_categories_name_nocase ON categories(name COLLATE NOCASE);
+            """)
 
         # 2. Transactions table
         cursor.execute("""

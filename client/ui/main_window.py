@@ -170,6 +170,7 @@ class MainWindow(tk.Tk):
             self.budget_view.load_categories()
             self.budget_view.load_budgets()
         elif selected_idx == 3:
+            self.charts_view.load_categories()
             self.charts_view.load_analytics()
         elif selected_idx == 4:
             self.csv_view.load_categories()

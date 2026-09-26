@@ -205,10 +205,11 @@ class TransactionRepository:
             conn.close()
 
     def get_totals_by_type_and_month(
-        self, year: int, month: Optional[int] = None
+        self, year: int, month: Optional[int] = None, category_id: Optional[int] = None
     ) -> Dict[str, float]:
         """
-        Calculate total income and total expenses for a given year and optional month.
+        Calculate total income and total expenses for a given year and optional month,
+        optionally filtered by category_id.
         """
         conn = get_db_connection(self.db_path)
         try:
@@ -226,6 +227,10 @@ class TransactionRepository:
                 query += " AND strftime('%m', date) = ?"
                 params.append(f"{month:02d}")
 
+            if category_id is not None:
+                query += " AND category_id = ?"
+                params.append(category_id)
+
             query += " GROUP BY type;"
 
             cursor.execute(query, params)
@@ -238,10 +243,11 @@ class TransactionRepository:
             conn.close()
 
     def get_category_spending_breakdown(
-        self, year: int, month: Optional[int] = None
+        self, year: int, month: Optional[int] = None, category_id: Optional[int] = None
     ) -> List[Dict[str, Any]]:
         """
-        Get expense breakdown by category for a given year and optional month.
+        Get expense breakdown by category for a given year and optional month,
+        optionally filtered by category_id.
         """
         conn = get_db_connection(self.db_path)
         try:
@@ -262,6 +268,10 @@ class TransactionRepository:
                 query += " AND strftime('%m', t.date) = ?"
                 params.append(f"{month:02d}")
 
+            if category_id is not None:
+                query += " AND t.category_id = ?"
+                params.append(category_id)
+
             query += """
                 GROUP BY c.id, c.name
                 ORDER BY total_spent DESC;
@@ -273,9 +283,12 @@ class TransactionRepository:
         finally:
             conn.close()
 
-    def get_monthly_totals_for_year(self, year: int) -> List[Dict[str, Any]]:
+    def get_monthly_totals_for_year(
+        self, year: int, category_id: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
         """
-        Get monthly income and expense totals for all 12 months of a given year.
+        Get monthly income and expense totals for all 12 months of a given year,
+        optionally filtered by category_id.
         """
         conn = get_db_connection(self.db_path)
         try:
@@ -287,10 +300,18 @@ class TransactionRepository:
                     COALESCE(SUM(amount), 0.0) AS total
                 FROM transactions
                 WHERE strftime('%Y', date) = ?
+            """
+            params = [str(year)]
+
+            if category_id is not None:
+                query += " AND category_id = ?"
+                params.append(category_id)
+
+            query += """
                 GROUP BY strftime('%m', date), type
                 ORDER BY month ASC;
             """
-            cursor.execute(query, (str(year),))
+            cursor.execute(query, params)
             rows = cursor.fetchall()
 
             # Initialize 12 months

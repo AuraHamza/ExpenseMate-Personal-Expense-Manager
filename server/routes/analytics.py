@@ -24,6 +24,7 @@ def get_analytics():
     now = datetime.now()
     year = request.args.get("year", default=now.year, type=int)
     month = request.args.get("month", default=None, type=int)
+    category_id = request.args.get("category_id", default=None, type=int)
 
     if month is not None and (month < 1 or month > 12):
         return (
@@ -35,7 +36,9 @@ def get_analytics():
 
     try:
         service = _get_analytics_service()
-        report = service.get_financial_summary(year=year, month=month)
+        report = service.get_financial_summary(
+            year=year, month=month, category_id=category_id
+        )
         return jsonify({"success": True, "data": report}), 200
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500

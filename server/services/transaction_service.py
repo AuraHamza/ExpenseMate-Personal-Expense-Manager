@@ -66,15 +66,7 @@ class TransactionService:
             )
 
         # 3. Validate Date (format: YYYY-MM-DD)
-        if not date_str:
-            raise ValueError("Transaction date is required.")
-        try:
-            parsed_date = datetime.strptime(str(date_str).strip(), "%Y-%m-%d")
-            normalized_date = parsed_date.strftime("%Y-%m-%d")
-        except ValueError:
-            raise ValueError(
-                f"Invalid date format '{date_str}'. Expected format is YYYY-MM-DD."
-            )
+        normalized_date = self._validate_date(date_str)
 
         # 4. Validate Category
         try:
@@ -86,6 +78,18 @@ class TransactionService:
             raise ValueError(f"Category with ID {cat_id} does not exist.")
 
         return normalized_type, val_amount, normalized_date, cat_id
+
+    def _validate_date(self, date_str: str) -> str:
+        """Validate date format is YYYY-MM-DD."""
+        if not date_str:
+            raise ValueError("Transaction date is required.")
+        try:
+            parsed = datetime.strptime(str(date_str).strip(), "%Y-%m-%d")
+            return parsed.strftime("%Y-%m-%d")
+        except ValueError:
+            raise ValueError(
+                f"Invalid date format '{date_str}'. Expected format is YYYY-MM-DD."
+            )
 
     def create_transaction(
         self,
@@ -192,9 +196,19 @@ class TransactionService:
         trans_type: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """Retrieve transactions with optional filtering."""
+        norm_start = None
+        norm_end = None
+        if start_date:
+            norm_start = self._validate_date(start_date)
+        if end_date:
+            norm_end = self._validate_date(end_date)
+        if norm_start and norm_end and norm_start > norm_end:
+            raise ValueError(
+                f"Invalid date range: start_date '{norm_start}' cannot be after end_date '{norm_end}'."
+            )
         return self.transaction_repo.get_all(
-            start_date=start_date,
-            end_date=end_date,
+            start_date=norm_start,
+            end_date=norm_end,
             category_id=category_id,
             trans_type=trans_type,
         )

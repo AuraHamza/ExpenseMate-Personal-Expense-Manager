@@ -7,6 +7,7 @@ POST /api/csv/import
 GET  /api/csv/export
 """
 
+from typing import Tuple, Optional
 from flask import Blueprint, request, jsonify, Response, current_app
 from server.services.csv_service import CsvService
 
@@ -18,39 +19,36 @@ def _get_csv_service() -> CsvService:
     return CsvService(db_path=db_path)
 
 
+def _extract_csv_from_upload(uploaded_file) -> Tuple[Optional[str], Optional[str]]:
+    """Extract CSV text from uploaded file object."""
+    if uploaded_file.filename == "":
+        return None, "No file selected."
+    try:
+        return uploaded_file.read().decode("utf-8-sig"), None
+    except UnicodeDecodeError:
+        return None, "Invalid file encoding. UTF-8 required."
+
+
+def _extract_csv_text_from_request() -> Tuple[Optional[str], Optional[str]]:
+    """Extract CSV content from request (file upload, JSON body, or raw text)."""
+    if "file" in request.files:
+        return _extract_csv_from_upload(request.files["file"])
+    if request.is_json:
+        data = request.get_json(silent=True) or {}
+        return data.get("csv_content"), None
+    raw_data = request.get_data(as_text=True)
+    return (raw_data if raw_data else None), None
+
+
 @csv_bp.route("/import", methods=["POST"])
 def import_csv():
     """
     Import transactions from CSV.
     Supports multipart/form-data upload or JSON with 'csv_content'.
     """
-    csv_text = None
-
-    if "file" in request.files:
-        uploaded_file = request.files["file"]
-        if uploaded_file.filename == "":
-            return jsonify({"success": False, "error": "No file selected."}), 400
-        try:
-            csv_text = uploaded_file.read().decode("utf-8-sig")
-        except UnicodeDecodeError:
-            return (
-                jsonify(
-                    {
-                        "success": False,
-                        "error": "Invalid file encoding. UTF-8 required.",
-                    }
-                ),
-                400,
-            )
-    elif request.is_json:
-        data = request.get_json(silent=True) or {}
-        csv_text = data.get("csv_content")
-    else:
-        # Check raw text data
-        raw_data = request.get_data(as_text=True)
-        if raw_data:
-            csv_text = raw_data
-
+    csv_text, error = _extract_csv_text_from_request()
+    if error:
+        return jsonify({"success": False, "error": error}), 400
     if not csv_text or not csv_text.strip():
         return jsonify({"success": False, "error": "No CSV content provided."}), 400
 

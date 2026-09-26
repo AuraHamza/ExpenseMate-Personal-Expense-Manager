@@ -11,7 +11,7 @@ Handles robust CSV import and export for transactions:
 
 import csv
 import io
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Tuple
 from server.repositories.category_repository import CategoryRepository
 from server.repositories.transaction_repository import TransactionRepository
 from server.services.transaction_service import TransactionService
@@ -35,6 +35,64 @@ class CsvService:
             db_path=db_path,
         )
 
+    def _parse_and_validate_header(self, reader) -> Tuple[Dict[str, int], int]:
+        """Validate CSV header and return column index mapping and description index."""
+        try:
+            raw_header = next(reader)
+        except StopIteration:
+            raise ValueError("CSV file has no content.")
+
+        header = [col.strip().lower() for col in raw_header]
+        required_cols = {"type", "amount", "date", "category"}
+        missing = required_cols - set(header)
+        if missing:
+            missing_cols = ", ".join(sorted(missing))
+            raise ValueError(
+                f"CSV header missing required columns: {missing_cols}. Found: {raw_header}"
+            )
+
+        col_map = {col: idx for idx, col in enumerate(header)}
+        desc_idx = col_map.get("description", -1)
+        return col_map, desc_idx
+
+    def _resolve_category_id(self, cat_name: str) -> int:
+        """Find or register a category by name, returning its ID."""
+        clean_name = cat_name.strip()
+        if not clean_name:
+            raise ValueError("Category name cannot be empty.")
+        existing_cat = self.category_repo.get_by_name(clean_name)
+        if existing_cat:
+            return existing_cat["id"]
+        return self.category_repo.create(clean_name)
+
+    def _process_csv_row(
+        self, row: List[str], col_map: Dict[str, int], desc_idx: int
+    ) -> Tuple[bool, Optional[Dict[str, Any]]]:
+        """Process a single CSV row, returning (is_valid_row, alert_or_None)."""
+        if not row or all(not cell.strip() for cell in row):
+            return False, None
+
+        trans_type = row[col_map["type"]].strip()
+        raw_amount = row[col_map["amount"]].strip()
+        date_str = row[col_map["date"]].strip()
+        cat_name = row[col_map["category"]].strip()
+        desc = (
+            row[desc_idx].strip()
+            if desc_idx != -1 and desc_idx < len(row)
+            else ""
+        )
+
+        category_id = self._resolve_category_id(cat_name)
+
+        _, alert = self.transaction_service.create_transaction(
+            trans_type=trans_type,
+            amount=raw_amount,
+            date_str=date_str,
+            category_id=category_id,
+            description=desc,
+        )
+        return True, alert
+
     def import_transactions_from_csv(self, csv_content: str) -> Dict[str, Any]:
         """
         Parse and validate CSV content, inserting valid rows.
@@ -46,27 +104,7 @@ class CsvService:
 
         f = io.StringIO(csv_content.strip())
         reader = csv.reader(f)
-
-        try:
-            raw_header = next(reader)
-        except StopIteration:
-            raise ValueError("CSV file has no content.")
-
-        # Normalize header
-        header = [col.strip().lower() for col in raw_header]
-
-        # Check required columns
-        required_cols = {"type", "amount", "date", "category"}
-        header_set = set(header)
-        missing = required_cols - header_set
-        if missing:
-            missing_cols = ", ".join(sorted(missing))
-            raise ValueError(
-                f"CSV header missing required columns: {missing_cols}. Found: {raw_header}"
-            )
-
-        col_map = {col: idx for idx, col in enumerate(header)}
-        desc_idx = col_map.get("description", -1)
+        col_map, desc_idx = self._parse_and_validate_header(reader)
 
         imported_count = 0
         failed_count = 0
@@ -74,43 +112,13 @@ class CsvService:
         alerts: List[Dict[str, Any]] = []
 
         for row_idx, row in enumerate(reader, start=2):
-            if not row or all(not cell.strip() for cell in row):
-                continue  # skip blank lines
-
             try:
-                trans_type = row[col_map["type"]].strip()
-                raw_amount = row[col_map["amount"]].strip()
-                date_str = row[col_map["date"]].strip()
-                cat_name = row[col_map["category"]].strip()
-                desc = (
-                    row[desc_idx].strip()
-                    if desc_idx != -1 and desc_idx < len(row)
-                    else ""
-                )
-
-                if not cat_name:
-                    raise ValueError("Category name cannot be empty.")
-
-                # Find or create category
-                existing_cat = self.category_repo.get_by_name(cat_name)
-                if existing_cat:
-                    category_id = existing_cat["id"]
-                else:
-                    category_id = self.category_repo.create(cat_name)
-
-                # Create transaction using TransactionService for full validation
-                _, alert = self.transaction_service.create_transaction(
-                    trans_type=trans_type,
-                    amount=raw_amount,
-                    date_str=date_str,
-                    category_id=category_id,
-                    description=desc,
-                )
-
+                processed, alert = self._process_csv_row(row, col_map, desc_idx)
+                if not processed:
+                    continue
                 imported_count += 1
                 if alert:
                     alerts.append(alert)
-
             except Exception as e:
                 failed_count += 1
                 errors.append(

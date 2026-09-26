@@ -6,6 +6,7 @@ Handles database operations for categories.
 Contains pure database-access logic only.
 """
 
+import sqlite3
 from typing import List, Dict, Any, Optional
 from server.database import get_db_connection
 
@@ -55,13 +56,20 @@ class CategoryRepository:
             conn.close()
 
     def create(self, name: str) -> int:
-        """Insert a new category and return its ID."""
+        """Insert a new category and return its ID. Raises ValueError if category already exists or name is empty."""
+        clean_name = str(name).strip() if name is not None else ""
+        if not clean_name:
+            raise ValueError("Category name cannot be empty.")
+        if self.get_by_name(clean_name) is not None:
+            raise ValueError(f"Category '{clean_name}' already exists.")
         conn = get_db_connection(self.db_path)
         try:
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO categories (name) VALUES (?);", (name.strip(),))
+            cursor.execute("INSERT INTO categories (name) VALUES (?);", (clean_name,))
             conn.commit()
             return cursor.lastrowid
+        except sqlite3.IntegrityError:
+            raise ValueError(f"Category '{clean_name}' already exists.")
         finally:
             conn.close()
 

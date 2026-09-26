@@ -38,7 +38,10 @@ class ChartsView(ttk.Frame):
         self.current_year = now.year
         self.current_month = now.month
 
+        self.categories_map: Dict[str, int] = {}
+
         self._create_widgets()
+        self.load_categories()
         self.load_analytics()
 
     def _create_widgets(self):
@@ -59,13 +62,27 @@ class ChartsView(ttk.Frame):
         months = ["All Months"] + [
             f"{m:02d} - {calendar.month_name[m]}" for m in range(1, 13)
         ]
-        ttk.Combobox(
+        month_combo = ttk.Combobox(
             control_frame,
             textvariable=self.month_var,
             values=months,
             state="readonly",
             width=16,
-        ).pack(side="left", padx=(0, 15))
+        )
+        month_combo.pack(side="left", padx=(0, 15))
+        month_combo.bind("<<ComboboxSelected>>", lambda e: self.load_analytics())
+
+        ttk.Label(control_frame, text="Category:").pack(side="left", padx=(0, 4))
+        self.cat_var = tk.StringVar(value="All Categories")
+        self.cat_combo = ttk.Combobox(
+            control_frame,
+            textvariable=self.cat_var,
+            values=["All Categories"],
+            state="readonly",
+            width=18,
+        )
+        self.cat_combo.pack(side="left", padx=(0, 15))
+        self.cat_combo.bind("<<ComboboxSelected>>", lambda e: self.load_analytics())
 
         ttk.Button(
             control_frame, text="Refresh Charts", command=self.load_analytics
@@ -113,6 +130,18 @@ class ChartsView(ttk.Frame):
         val_lbl.pack(anchor="w", pady=(3, 0))
         return val_lbl
 
+    def load_categories(self):
+        """Fetch categories to populate category filter dropdown."""
+        try:
+            cats = self.api_client.get_categories()
+            self.categories_map = {c["name"]: c["id"] for c in cats}
+            options = ["All Categories"] + sorted(list(self.categories_map.keys()))
+            self.cat_combo["values"] = options
+            if self.cat_var.get() not in options:
+                self.cat_var.set("All Categories")
+        except ApiClientError:
+            pass
+
     def load_analytics(self):
         """Fetch analytics report from API and re-render charts."""
         try:
@@ -128,8 +157,17 @@ class ChartsView(ttk.Frame):
             except (ValueError, IndexError):
                 month_val = None
 
+        cat_name = self.cat_var.get()
+        cat_id = (
+            self.categories_map.get(cat_name)
+            if cat_name and cat_name != "All Categories"
+            else None
+        )
+
         try:
-            report = self.api_client.get_analytics(year=year_val, month=month_val)
+            report = self.api_client.get_analytics(
+                year=year_val, month=month_val, category_id=cat_id
+            )
             self._update_kpi(report["summary"])
             self._render_charts(report)
         except ApiClientError as e:

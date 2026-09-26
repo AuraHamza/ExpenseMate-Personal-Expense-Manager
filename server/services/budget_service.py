@@ -28,6 +28,42 @@ class BudgetService:
         self.category_repo = category_repo or CategoryRepository(db_path)
         self.transaction_repo = transaction_repo or TransactionRepository(db_path)
 
+    def _validate_category_id(self, category_id: Any) -> int:
+        try:
+            cat_id = int(category_id)
+        except (ValueError, TypeError):
+            raise ValueError("Valid category ID is required.")
+        if not self.category_repo.exists(cat_id):
+            raise ValueError(f"Category with ID {cat_id} does not exist.")
+        return cat_id
+
+    def _validate_month(self, month: Any) -> int:
+        try:
+            m = int(month)
+        except (ValueError, TypeError):
+            raise ValueError("Valid month integer (1-12) is required.")
+        if m < 1 or m > 12:
+            raise ValueError(f"Month must be between 1 and 12. Received: {m}")
+        return m
+
+    def _validate_year(self, year: Any) -> int:
+        try:
+            y = int(year)
+        except (ValueError, TypeError):
+            raise ValueError("Valid year integer is required.")
+        if y < 2000 or y > 2100:
+            raise ValueError(f"Year must be between 2000 and 2100. Received: {y}")
+        return y
+
+    def _validate_amount(self, amount: Any) -> float:
+        try:
+            amt = float(amount)
+        except (ValueError, TypeError):
+            raise ValueError(f"Invalid budget amount '{amount}'. Must be a number.")
+        if amt < 0:
+            raise ValueError(f"Budget amount cannot be negative. Received: {amt}")
+        return amt
+
     def validate_budget_data(
         self,
         category_id: Any,
@@ -36,40 +72,12 @@ class BudgetService:
         amount: Any,
     ) -> Dict[str, Any]:
         """Validate input parameters for budget records."""
-        # 1. Validate Category
-        try:
-            cat_id = int(category_id)
-        except (ValueError, TypeError):
-            raise ValueError("Valid category ID is required.")
-
-        if not self.category_repo.exists(cat_id):
-            raise ValueError(f"Category with ID {cat_id} does not exist.")
-
-        # 2. Validate Month
-        try:
-            m = int(month)
-        except (ValueError, TypeError):
-            raise ValueError("Valid month integer (1-12) is required.")
-        if m < 1 or m > 12:
-            raise ValueError(f"Month must be between 1 and 12. Received: {m}")
-
-        # 3. Validate Year
-        try:
-            y = int(year)
-        except (ValueError, TypeError):
-            raise ValueError("Valid year integer is required.")
-        if y < 2000 or y > 2100:
-            raise ValueError(f"Year must be between 2000 and 2100. Received: {y}")
-
-        # 4. Validate Amount
-        try:
-            amt = float(amount)
-        except (ValueError, TypeError):
-            raise ValueError(f"Invalid budget amount '{amount}'. Must be a number.")
-        if amt < 0:
-            raise ValueError(f"Budget amount cannot be negative. Received: {amt}")
-
-        return {"category_id": cat_id, "month": m, "year": y, "amount": amt}
+        return {
+            "category_id": self._validate_category_id(category_id),
+            "month": self._validate_month(month),
+            "year": self._validate_year(year),
+            "amount": self._validate_amount(amount),
+        }
 
     def set_budget(
         self,

@@ -28,13 +28,19 @@ class AnalyticsService:
         self.budget_repo = budget_repo or BudgetRepository(db_path)
 
     def get_financial_summary(
-        self, year: int, month: Optional[int] = None
+        self,
+        year: int,
+        month: Optional[int] = None,
+        category_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
-        Produce a complete analytics summary for a given year and optional month.
+        Produce a complete analytics summary for a given year and optional month,
+        optionally filtered by category_id.
         """
         # 1. Totals by type
-        totals = self.transaction_repo.get_totals_by_type_and_month(year, month)
+        totals = self.transaction_repo.get_totals_by_type_and_month(
+            year, month, category_id=category_id
+        )
         total_income = round(totals.get("income", 0.0), 2)
         total_expense = round(totals.get("expense", 0.0), 2)
         net_savings = round(total_income - total_expense, 2)
@@ -44,7 +50,7 @@ class AnalyticsService:
 
         # 2. Category spending breakdown
         cat_breakdown = self.transaction_repo.get_category_spending_breakdown(
-            year, month
+            year, month, category_id=category_id
         )
         category_spending = []
         labels = []
@@ -70,7 +76,9 @@ class AnalyticsService:
                 values.append(spent)
 
         # 3. Monthly trends for the given year (12 months)
-        monthly_raw = self.transaction_repo.get_monthly_totals_for_year(year)
+        monthly_raw = self.transaction_repo.get_monthly_totals_for_year(
+            year, category_id=category_id
+        )
         monthly_trends = []
         for m_item in monthly_raw:
             m_num = m_item["month"]
@@ -90,6 +98,7 @@ class AnalyticsService:
                 "year": year,
                 "month": month,
                 "month_name": calendar.month_name[month] if month else "All Months",
+                "category_id": category_id,
             },
             "summary": {
                 "total_income": total_income,
