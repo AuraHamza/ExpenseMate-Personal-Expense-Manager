@@ -1,14 +1,3 @@
-"""
-Charts and Analytics View
-Module Owner: Rafay (Frontend / Desktop Client Module)
-
-Embeds Matplotlib charts directly in the Tkinter desktop GUI:
-- Category spending distribution (Pie chart)
-- Category totals / Monthly comparison (Bar chart)
-- Financial overview KPI metrics (Income, Expenses, Net Savings, Savings Rate)
-- Month and year selection controls
-"""
-
 from datetime import datetime
 import calendar
 import tkinter as tk

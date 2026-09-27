@@ -1,11 +1,3 @@
-"""
-Budget Repository
-Module Owner: Hamza (Backend Module)
-
-Handles raw database access and SQL queries for budgets.
-Uses parameterized queries to prevent SQL injection.
-"""
-
 from typing import List, Dict, Any, Optional
 from server.database import get_db_connection
 

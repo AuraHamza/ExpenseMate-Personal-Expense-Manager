@@ -1,11 +1,3 @@
-"""
-Budget View
-Module Owner: Rafay (Frontend / Desktop Client Module)
-
-Allows setting and updating monthly category budgets, and visualizes
-spending thresholds against budgets with color-coded status indicators.
-"""
-
 from datetime import datetime
 import calendar
 import tkinter as tk

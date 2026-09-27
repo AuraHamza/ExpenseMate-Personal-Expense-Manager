@@ -1,12 +1,3 @@
-"""
-Transaction History View
-Module Owner: Rafay (Frontend / Desktop Client Module)
-
-Displays transaction history in a sortable, filterable table.
-Supports filtering by date range, category, and transaction type,
-with options to edit and delete individual transactions.
-"""
-
 from datetime import datetime
 import tkinter as tk
 from tkinter import ttk, messagebox

@@ -1,11 +1,3 @@
-"""
-Database Management Module
-Module Owner: Hamza (Backend Module)
-
-Responsible for SQLite connection handling, schema creation, table initialization,
-and seeding default categories for ExpenseMate.
-"""
-
 import os
 import sqlite3
 from typing import Optional

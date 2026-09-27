@@ -1,11 +1,3 @@
-"""
-Category Repository
-Module Owner: Hamza (Backend Module)
-
-Handles database operations for categories.
-Contains pure database-access logic only.
-"""
-
 import sqlite3
 from typing import List, Dict, Any, Optional
 from server.database import get_db_connection

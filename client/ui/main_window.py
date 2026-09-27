@@ -1,15 +1,3 @@
-"""
-Main Desktop Application Window
-Module Owner: Rafay (Frontend / Desktop Client Module)
-
-Integrates all GUI views into a tabbed desktop application:
-1. Add Transaction
-2. Transaction History
-3. Monthly Budgets
-4. Analytics & Charts
-5. CSV Import & Export
-"""
-
 import tkinter as tk
 from tkinter import ttk
 from typing import Optional

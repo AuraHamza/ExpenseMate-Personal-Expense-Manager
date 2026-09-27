@@ -1,11 +1,3 @@
-"""
-Flask Application Factory
-Module Owner: Hamza (Backend Module)
-
-Initializes the Flask REST API application, registers blueprints,
-configures SQLite database connection, and defines common error handlers.
-"""
-
 from typing import Optional, Dict, Any
 from flask import Flask, jsonify
 from server.database import DEFAULT_DB_PATH, init_db
@@ -19,9 +11,6 @@ from server.routes.csv_io import csv_bp
 def create_app(
     test_config: Optional[Dict[str, Any]] = None, db_path: Optional[str] = None
 ) -> Flask:
-    """
-    Application factory for ExpenseMate backend server.
-    """
     app = Flask(__name__)
 
     # Default configuration

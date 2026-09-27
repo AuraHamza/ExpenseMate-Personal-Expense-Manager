@@ -1,12 +1,3 @@
-"""
-Client API Module
-Module Owner: Rafay (Frontend / Desktop Client Module)
-
-Centralized HTTP client communicating with the Flask backend.
-The UI layer calls methods in this module exclusively, avoiding direct
-HTTP or database interactions from view components.
-"""
-
 from typing import Optional, Dict, Any, List, Tuple
 import requests
 
@@ -21,8 +12,6 @@ class ApiClientError(Exception):
 
 
 class ApiClient:
-    """Central client for ExpenseMate REST API operations."""
-
     def __init__(self, base_url: str = "http://127.0.0.1:5000", timeout: int = 10):
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout

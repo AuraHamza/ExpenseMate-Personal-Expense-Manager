@@ -1,10 +1,3 @@
-"""
-Client Main Entry Point
-Module Owner: Rafay (Frontend / Desktop Client Module)
-
-Launches the ExpenseMate desktop GUI client application.
-"""
-
 import argparse
 from client.api_client import ApiClient
 from client.ui.main_window import MainWindow

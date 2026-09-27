@@ -1,11 +1,3 @@
-"""
-CSV Import / Export Dialog & View
-Module Owner: Rafay (Frontend / Desktop Client Module)
-
-Provides interface for importing transactions from CSV files with row-level
-validation reporting, and exporting filtered transactions into CSV format.
-"""
-
 import os
 import tkinter as tk
 from tkinter import ttk, filedialog, messagebox

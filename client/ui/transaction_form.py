@@ -1,12 +1,3 @@
-"""
-Transaction Form View
-Module Owner: Rafay (Frontend / Desktop Client Module)
-
-Provides interface for adding and editing income and expense transactions.
-Supports category selection, quick custom category creation, and displays
-automatic budget alert notifications received from the server.
-"""
-
 from datetime import datetime
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog
