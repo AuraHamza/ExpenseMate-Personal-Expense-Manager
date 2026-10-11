@@ -54,9 +54,6 @@ class ApiClient:
         except requests.RequestException as e:
             raise ApiClientError(f"Network error: {str(e)}")
 
-    # -------------------------------------------------------------
-    # System / Health
-    # -------------------------------------------------------------
     def check_health(self) -> Tuple[bool, str]:
         """Check if backend server is responsive."""
         try:
@@ -65,9 +62,6 @@ class ApiClient:
         except ApiClientError as e:
             return False, e.message
 
-    # -------------------------------------------------------------
-    # Categories
-    # -------------------------------------------------------------
     def get_categories(self) -> List[Dict[str, Any]]:
         """Retrieve list of categories."""
         return self._request("GET", "/api/categories")
@@ -76,9 +70,6 @@ class ApiClient:
         """Create a new custom category."""
         return self._request("POST", "/api/categories", json={"name": name})
 
-    # -------------------------------------------------------------
-    # Transactions
-    # -------------------------------------------------------------
     def get_transactions(
         self,
         start_date: Optional[str] = None,
@@ -150,9 +141,6 @@ class ApiClient:
         self._request("DELETE", f"/api/transactions/{trans_id}")
         return True
 
-    # -------------------------------------------------------------
-    # Budgets
-    # -------------------------------------------------------------
     def get_budgets(
         self,
         year: Optional[int] = None,
@@ -196,9 +184,6 @@ class ApiClient:
         self._request("DELETE", f"/api/budgets/{budget_id}")
         return True
 
-    # -------------------------------------------------------------
-    # Analytics
-    # -------------------------------------------------------------
     def get_analytics(
         self, year: int, month: Optional[int] = None, category_id: Optional[int] = None
     ) -> Dict[str, Any]:
@@ -210,9 +195,6 @@ class ApiClient:
             params["category_id"] = category_id
         return self._request("GET", "/api/analytics", params=params)
 
-    # -------------------------------------------------------------
-    # CSV Import / Export
-    # -------------------------------------------------------------
     def import_csv_file(self, file_path: str) -> Dict[str, Any]:
         """Upload and import transactions from a local CSV file."""
         try:

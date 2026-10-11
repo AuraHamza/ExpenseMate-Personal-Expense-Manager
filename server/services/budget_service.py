@@ -1,7 +1,5 @@
 """
 Budget Service
-Module Owner: Hamza (Backend Module)
-
 Contains business logic for monthly category budgets:
 - Create, update, upsert, and retrieve budgets
 - Validation of budget inputs

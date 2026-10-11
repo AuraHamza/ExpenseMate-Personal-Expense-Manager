@@ -28,11 +28,9 @@ class HistoryView(ttk.Frame):
         self.load_transactions()
 
     def _create_widgets(self):
-        # 1. Filter Bar
         filter_frame = ttk.LabelFrame(self, text="Filter Transactions", padding=10)
         filter_frame.pack(fill="x", padx=5, pady=(0, 10))
 
-        # Date filters
         ttk.Label(filter_frame, text="From:").grid(
             row=0, column=0, padx=5, pady=2, sticky="w"
         )
@@ -51,7 +49,6 @@ class HistoryView(ttk.Frame):
         )
         self.end_date_entry.grid(row=0, column=3, padx=5, pady=2)
 
-        # Category filter
         ttk.Label(filter_frame, text="Category:").grid(
             row=0, column=4, padx=5, pady=2, sticky="w"
         )
@@ -61,7 +58,6 @@ class HistoryView(ttk.Frame):
         )
         self.cat_filter_combo.grid(row=0, column=5, padx=5, pady=2)
 
-        # Type filter
         ttk.Label(filter_frame, text="Type:").grid(
             row=0, column=6, padx=5, pady=2, sticky="w"
         )
@@ -75,7 +71,6 @@ class HistoryView(ttk.Frame):
         )
         self.type_filter_combo.grid(row=0, column=7, padx=5, pady=2)
 
-        # Action buttons
         ttk.Button(filter_frame, text="Filter", command=self.load_transactions).grid(
             row=0, column=8, padx=6, pady=2
         )
@@ -83,7 +78,6 @@ class HistoryView(ttk.Frame):
             row=0, column=9, padx=4, pady=2
         )
 
-        # 2. Table with scrollbars
         table_frame = ttk.Frame(self)
         table_frame.pack(fill="both", expand=True, padx=5, pady=5)
 
@@ -106,7 +100,6 @@ class HistoryView(ttk.Frame):
         self.tree.column("category", width=150, anchor="w")
         self.tree.column("description", width=250, anchor="w")
 
-        # Color tags
         self.tree.tag_configure("income", foreground="#2e7d32")
         self.tree.tag_configure("expense", foreground="#c62828")
 
@@ -125,7 +118,6 @@ class HistoryView(ttk.Frame):
         table_frame.columnconfigure(0, weight=1)
         table_frame.rowconfigure(0, weight=1)
 
-        # 3. Action Toolbar at bottom
         action_frame = ttk.Frame(self)
         action_frame.pack(fill="x", padx=5, pady=(5, 0))
 

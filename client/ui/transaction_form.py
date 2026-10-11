@@ -27,7 +27,6 @@ class TransactionForm(ttk.LabelFrame):
         # Configure grid columns
         self.columnconfigure(1, weight=1)
 
-        # 1. Type
         ttk.Label(self, text="Transaction Type:").grid(
             row=0, column=0, sticky="w", pady=6
         )
@@ -41,13 +40,11 @@ class TransactionForm(ttk.LabelFrame):
             type_frame, text="Income", value="income", variable=self.type_var
         ).pack(side="left")
 
-        # 2. Amount
         ttk.Label(self, text="Amount ($):").grid(row=1, column=0, sticky="w", pady=6)
         self.amount_var = tk.StringVar()
         self.amount_entry = ttk.Entry(self, textvariable=self.amount_var, width=30)
         self.amount_entry.grid(row=1, column=1, sticky="ew", pady=6)
 
-        # 3. Date
         ttk.Label(self, text="Date (YYYY-MM-DD):").grid(
             row=2, column=0, sticky="w", pady=6
         )
@@ -55,7 +52,6 @@ class TransactionForm(ttk.LabelFrame):
         self.date_entry = ttk.Entry(self, textvariable=self.date_var, width=30)
         self.date_entry.grid(row=2, column=1, sticky="ew", pady=6)
 
-        # 4. Category
         ttk.Label(self, text="Category:").grid(row=3, column=0, sticky="w", pady=6)
         cat_frame = ttk.Frame(self)
         cat_frame.grid(row=3, column=1, sticky="ew", pady=6)
@@ -72,7 +68,6 @@ class TransactionForm(ttk.LabelFrame):
         )
         self.add_cat_btn.grid(row=0, column=1, sticky="e")
 
-        # 5. Description
         ttk.Label(self, text="Description:").grid(row=4, column=0, sticky="w", pady=6)
         self.desc_var = tk.StringVar()
         self.desc_entry = ttk.Entry(self, textvariable=self.desc_var, width=30)
@@ -233,7 +228,6 @@ class TransactionEditDialog(tk.Toplevel):
         frame.pack(fill="both", expand=True)
         frame.columnconfigure(1, weight=1)
 
-        # Type
         ttk.Label(frame, text="Type:").grid(row=0, column=0, sticky="w", pady=6)
         self.type_var = tk.StringVar()
         type_f = ttk.Frame(frame)
@@ -245,14 +239,12 @@ class TransactionEditDialog(tk.Toplevel):
             type_f, text="Income", value="income", variable=self.type_var
         ).pack(side="left")
 
-        # Amount
         ttk.Label(frame, text="Amount ($):").grid(row=1, column=0, sticky="w", pady=6)
         self.amount_var = tk.StringVar()
         ttk.Entry(frame, textvariable=self.amount_var).grid(
             row=1, column=1, sticky="ew", pady=6
         )
 
-        # Date
         ttk.Label(frame, text="Date (YYYY-MM-DD):").grid(
             row=2, column=0, sticky="w", pady=6
         )
@@ -261,7 +253,6 @@ class TransactionEditDialog(tk.Toplevel):
             row=2, column=1, sticky="ew", pady=6
         )
 
-        # Category
         ttk.Label(frame, text="Category:").grid(row=3, column=0, sticky="w", pady=6)
         self.category_var = tk.StringVar()
         self.category_combo = ttk.Combobox(
@@ -269,14 +260,12 @@ class TransactionEditDialog(tk.Toplevel):
         )
         self.category_combo.grid(row=3, column=1, sticky="ew", pady=6)
 
-        # Description
         ttk.Label(frame, text="Description:").grid(row=4, column=0, sticky="w", pady=6)
         self.desc_var = tk.StringVar()
         ttk.Entry(frame, textvariable=self.desc_var).grid(
             row=4, column=1, sticky="ew", pady=6
         )
 
-        # Buttons
         btn_frame = ttk.Frame(frame)
         btn_frame.grid(row=5, column=0, columnspan=2, sticky="e", pady=(15, 0))
         ttk.Button(btn_frame, text="Cancel", command=self.destroy).pack(

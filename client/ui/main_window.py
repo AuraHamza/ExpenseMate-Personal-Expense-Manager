@@ -27,7 +27,6 @@ class MainWindow(tk.Tk):
         self._create_tabs()
         self._create_status_bar()
 
-        # Check server connectivity on startup
         self.after(500, self.check_connection)
 
     def _setup_styles(self):
@@ -51,9 +50,7 @@ class MainWindow(tk.Tk):
         title_lbl = ttk.Label(header_frame, text="ExpenseMate", style="Header.TLabel")
         title_lbl.pack(anchor="w")
 
-        sub_text = (
-            "Personal Expense Manager | Client Module: Rafay | Server Module: Hamza"
-        )
+        sub_text = "Personal Expense Manager"
         sub_lbl = ttk.Label(header_frame, text=sub_text, style="SubHeader.TLabel")
         sub_lbl.pack(anchor="w")
 
@@ -64,7 +61,6 @@ class MainWindow(tk.Tk):
         self.notebook = ttk.Notebook(self)
         self.notebook.pack(fill="both", expand=True, padx=10, pady=(0, 5))
 
-        # Tab 1: Add Transaction
         add_trans_tab = ttk.Frame(self.notebook, padding=15)
         self.trans_form = TransactionForm(
             add_trans_tab,
@@ -74,7 +70,6 @@ class MainWindow(tk.Tk):
         self.trans_form.pack(fill="x", expand=False)
         self.notebook.add(add_trans_tab, text="  Add Transaction  ")
 
-        # Tab 2: Transaction History
         self.history_view = HistoryView(
             self.notebook,
             api_client=self.api_client,
@@ -82,7 +77,6 @@ class MainWindow(tk.Tk):
         )
         self.notebook.add(self.history_view, text="  Transaction History  ")
 
-        # Tab 3: Monthly Budgets
         self.budget_view = BudgetView(
             self.notebook,
             api_client=self.api_client,
@@ -90,14 +84,12 @@ class MainWindow(tk.Tk):
         )
         self.notebook.add(self.budget_view, text="  Monthly Budgets  ")
 
-        # Tab 4: Analytics & Charts
         self.charts_view = ChartsView(
             self.notebook,
             api_client=self.api_client,
         )
         self.notebook.add(self.charts_view, text="  Analytics & Charts  ")
 
-        # Tab 5: CSV Import / Export
         self.csv_view = CsvView(
             self.notebook,
             api_client=self.api_client,
@@ -105,7 +97,6 @@ class MainWindow(tk.Tk):
         )
         self.notebook.add(self.csv_view, text="  CSV Import / Export  ")
 
-        # Bind tab change event to refresh active tab
         self.notebook.bind("<<NotebookTabChanged>>", self._on_tab_switched)
 
     def _create_status_bar(self):
@@ -140,7 +131,6 @@ class MainWindow(tk.Tk):
 
     def on_data_modified(self):
         """Called whenever data is added, edited, deleted, or imported."""
-        # Refresh current active view
         self._refresh_current_tab()
 
     def _on_tab_switched(self, event):

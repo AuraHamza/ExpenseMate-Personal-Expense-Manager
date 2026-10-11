@@ -1,7 +1,5 @@
 """
 Alert Service
-Module Owner: Hamza (Backend Module)
-
 Implements budget alert logic:
 - Evaluates spending against monthly category budgets.
 - Triggers WARNING when spending reaches 80% of budget.

@@ -28,9 +28,6 @@ class CsvView(ttk.Frame):
         self.columnconfigure(0, weight=1)
         self.columnconfigure(1, weight=1)
 
-        # -------------------------------------------------------------
-        # Left Panel: CSV Import
-        # -------------------------------------------------------------
         import_box = ttk.LabelFrame(
             self, text="Import Transactions from CSV", padding=15
         )
@@ -71,9 +68,6 @@ class CsvView(ttk.Frame):
         )
         self.import_status_lbl.pack(anchor="w", pady=5)
 
-        # -------------------------------------------------------------
-        # Right Panel: CSV Export
-        # -------------------------------------------------------------
         export_box = ttk.LabelFrame(self, text="Export Transactions to CSV", padding=15)
         export_box.grid(row=0, column=1, sticky="nsew", padx=10, pady=5)
         export_box.columnconfigure(1, weight=1)
@@ -82,7 +76,6 @@ class CsvView(ttk.Frame):
             export_box, text="Filter criteria for export (leave blank for all):"
         ).grid(row=0, column=0, columnspan=2, sticky="w", pady=(0, 10))
 
-        # Date Range
         ttk.Label(export_box, text="From Date:").grid(
             row=1, column=0, sticky="w", pady=5
         )
@@ -97,7 +90,6 @@ class CsvView(ttk.Frame):
             row=2, column=1, sticky="ew", pady=5
         )
 
-        # Category
         ttk.Label(export_box, text="Category:").grid(
             row=3, column=0, sticky="w", pady=5
         )
@@ -107,7 +99,6 @@ class CsvView(ttk.Frame):
         )
         self.exp_cat_combo.grid(row=3, column=1, sticky="ew", pady=5)
 
-        # Type
         ttk.Label(export_box, text="Type:").grid(row=4, column=0, sticky="w", pady=5)
         self.exp_type_var = tk.StringVar(value="All")
         ttk.Combobox(
@@ -117,7 +108,6 @@ class CsvView(ttk.Frame):
             state="readonly",
         ).grid(row=4, column=1, sticky="ew", pady=5)
 
-        # Export Button
         ttk.Button(
             export_box, text="Export to CSV File...", command=self._export_csv
         ).grid(row=5, column=0, columnspan=2, sticky="ew", pady=(20, 5))

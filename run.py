@@ -1,7 +1,5 @@
 """
 ExpenseMate Application Runner
-Integrates Hamza's Backend Module and Rafay's Frontend Module.
-
 Single-command entry point:
 - Initializes SQLite database
 - Starts the Flask API server
@@ -79,18 +77,15 @@ def main():
 
     base_url = f"http://{args.host}:{args.port}"
 
-    # 1. Always ensure database schema is initialized
     print(f"[ExpenseMate] Initializing database at: {args.db_path}")
     init_db(args.db_path)
 
-    # Mode A: Server Only
     if args.server_only:
         app = create_app(db_path=args.db_path)
         print(f"[ExpenseMate] Starting server-only mode on {base_url}")
         app.run(host=args.host, port=args.port, debug=False)
         return
 
-    # Mode B: Client Only (Connecting to existing external server)
     if args.client_only:
         print(f"[ExpenseMate] Launching client connecting to {base_url}")
         api_client = ApiClient(base_url=base_url)
@@ -98,10 +93,9 @@ def main():
         gui.mainloop()
         return
 
-    # Mode C: Full Application (Server + Desktop Client together)
     print("[ExpenseMate] Starting Flask server in background thread...")
 
-    # Detect port conflicts before Flask tries to bind
+    # Detect port conflicts before Flask attempts to bind
     actual_port = _find_available_port(args.port, host=args.host)
     if actual_port != args.port:
         print(

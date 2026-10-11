@@ -1,7 +1,5 @@
 """
 Transaction Service
-Module Owner: Hamza (Backend Module)
-
 Contains business logic for transactions:
 - Validation (amount, type, date, category existence)
 - CRUD orchestration
@@ -46,14 +44,12 @@ class TransactionService:
         Validate transaction fields.
         Raises ValueError with clear message if invalid.
         """
-        # 1. Validate Type
         if not trans_type or str(trans_type).lower().strip() not in self.VALID_TYPES:
             raise ValueError(
                 f"Invalid transaction type '{trans_type}'. Must be 'income' or 'expense'."
             )
         normalized_type = str(trans_type).lower().strip()
 
-        # 2. Validate Amount
         try:
             val_amount = float(amount)
         except (ValueError, TypeError):
@@ -65,10 +61,8 @@ class TransactionService:
                 f"Amount must be greater than zero. Received: {val_amount}"
             )
 
-        # 3. Validate Date (format: YYYY-MM-DD)
         normalized_date = self._validate_date(date_str)
 
-        # 4. Validate Category
         try:
             cat_id = int(category_id)
         except (ValueError, TypeError):
@@ -117,7 +111,6 @@ class TransactionService:
 
         transaction = self.transaction_repo.get_by_id(trans_id)
 
-        # Check alert if this was an expense
         alert = None
         if n_type == "expense":
             alert = self.alert_service.check_transaction_alert(

@@ -47,7 +47,6 @@ def init_db(db_path: Optional[str] = None) -> None:
     cursor = conn.cursor()
 
     try:
-        # 1. Categories table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS categories (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -58,7 +57,6 @@ def init_db(db_path: Optional[str] = None) -> None:
             CREATE UNIQUE INDEX IF NOT EXISTS idx_categories_name_nocase ON categories(name COLLATE NOCASE);
             """)
 
-        # 2. Transactions table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS transactions (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -73,7 +71,7 @@ def init_db(db_path: Optional[str] = None) -> None:
             );
             """)
 
-        # Index on date and category for faster querying and analytics
+        # Indexes on date and category for efficient filtering and aggregations
         cursor.execute("""
             CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions(date);
             """)
@@ -81,7 +79,6 @@ def init_db(db_path: Optional[str] = None) -> None:
             CREATE INDEX IF NOT EXISTS idx_transactions_category ON transactions(category_id);
             """)
 
-        # 3. Budgets table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS budgets (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -96,7 +93,6 @@ def init_db(db_path: Optional[str] = None) -> None:
             );
             """)
 
-        # 4. Seed default categories
         for cat_name in DEFAULT_CATEGORIES:
             cursor.execute(
                 """

@@ -32,13 +32,11 @@ class BudgetView(ttk.Frame):
         self.load_budgets()
 
     def _create_widgets(self):
-        # 1. Budget Entry / Upsert Form
         form_frame = ttk.LabelFrame(
             self, text="Set Monthly Category Budget", padding=10
         )
         form_frame.pack(fill="x", padx=5, pady=(0, 10))
 
-        # Category
         ttk.Label(form_frame, text="Category:").grid(
             row=0, column=0, padx=5, pady=4, sticky="w"
         )
@@ -48,7 +46,6 @@ class BudgetView(ttk.Frame):
         )
         self.cat_combo.grid(row=0, column=1, padx=5, pady=4)
 
-        # Month
         ttk.Label(form_frame, text="Month:").grid(
             row=0, column=2, padx=5, pady=4, sticky="w"
         )
@@ -65,7 +62,6 @@ class BudgetView(ttk.Frame):
         )
         self.month_combo.grid(row=0, column=3, padx=5, pady=4)
 
-        # Year
         ttk.Label(form_frame, text="Year:").grid(
             row=0, column=4, padx=5, pady=4, sticky="w"
         )
@@ -75,7 +71,6 @@ class BudgetView(ttk.Frame):
         )
         self.year_spin.grid(row=0, column=5, padx=5, pady=4)
 
-        # Amount
         ttk.Label(form_frame, text="Budget ($):").grid(
             row=0, column=6, padx=5, pady=4, sticky="w"
         )
@@ -85,12 +80,10 @@ class BudgetView(ttk.Frame):
         )
         self.amount_entry.grid(row=0, column=7, padx=5, pady=4)
 
-        # Save Button
         ttk.Button(form_frame, text="Save Budget", command=self._save_budget).grid(
             row=0, column=8, padx=10, pady=4
         )
 
-        # 2. Filter & Budgets Table
         table_container = ttk.LabelFrame(
             self, text="Monthly Budgets & Spending Progress", padding=10
         )

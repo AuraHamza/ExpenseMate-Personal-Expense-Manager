@@ -1,12 +1,10 @@
 """
 Analytics Service
-Module Owner: Hamza (Backend Module)
-
 Performs financial analytics calculations:
 - Total income, total expenses, net savings
-- Category-wise spending breakdowns and percentage distributions (Pie chart ready)
-- 12-month trend comparisons (Bar chart ready)
-- Month and year filtering
+- Category-wise spending breakdowns and percentage distributions
+- 12-month trend comparisons
+- Month, year, and category filtering
 """
 
 from typing import Optional, Dict, Any
@@ -37,7 +35,6 @@ class AnalyticsService:
         Produce a complete analytics summary for a given year and optional month,
         optionally filtered by category_id.
         """
-        # 1. Totals by type
         totals = self.transaction_repo.get_totals_by_type_and_month(
             year, month, category_id=category_id
         )
@@ -48,7 +45,6 @@ class AnalyticsService:
             round((net_savings / total_income * 100.0), 1) if total_income > 0 else 0.0
         )
 
-        # 2. Category spending breakdown
         cat_breakdown = self.transaction_repo.get_category_spending_breakdown(
             year, month, category_id=category_id
         )
@@ -75,7 +71,6 @@ class AnalyticsService:
                 labels.append(cat_name)
                 values.append(spent)
 
-        # 3. Monthly trends for the given year (12 months)
         monthly_raw = self.transaction_repo.get_monthly_totals_for_year(
             year, category_id=category_id
         )

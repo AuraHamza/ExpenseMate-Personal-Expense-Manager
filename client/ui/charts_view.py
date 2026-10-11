@@ -34,7 +34,6 @@ class ChartsView(ttk.Frame):
         self.load_analytics()
 
     def _create_widgets(self):
-        # 1. Top Controls Bar
         control_frame = ttk.LabelFrame(self, text="Analytics Controls", padding=10)
         control_frame.pack(fill="x", padx=5, pady=(0, 10))
 
@@ -77,7 +76,6 @@ class ChartsView(ttk.Frame):
             control_frame, text="Refresh Charts", command=self.load_analytics
         ).pack(side="left")
 
-        # 2. KPI Summary Cards
         self.kpi_frame = ttk.Frame(self)
         self.kpi_frame.pack(fill="x", padx=5, pady=(0, 10))
 
@@ -94,7 +92,6 @@ class ChartsView(ttk.Frame):
             self.kpi_frame, "Savings Rate", "0.0%", "#6a1b9a", 3
         )
 
-        # 3. Matplotlib Canvas
         chart_container = ttk.Frame(self)
         chart_container.pack(fill="both", expand=True, padx=5, pady=5)
 
