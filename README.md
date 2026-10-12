@@ -1,310 +1,290 @@
 # ExpenseMate — Personal Expense Manager
 
-**ExpenseMate** is a university Software Engineering project implementing a robust, local client-server desktop application for managing personal finances.
+ExpenseMate is a Python-based desktop application for managing personal finances. It provides transaction management, monthly category budgets, budget threshold alerts, financial analytics, and CSV import/export through a Tkinter desktop client connected to a Flask REST API and SQLite database.
 
----
+## Table of Contents
 
-## Authors & Module Ownership
+- [Features](#features)
+- [Technology Stack](#technology-stack)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Installation](#installation)
+- [Running the Application](#running-the-application)
+- [REST API Reference](#rest-api-reference)
+- [Database Schema](#database-schema)
+- [Testing](#testing)
+- [Software Engineering Practices](#software-engineering-practices)
+- [Team](#team)
 
-* **Frontend / Desktop Client Module (`client/`):** Rafay
-* **Backend / Server & Database Module (`server/`):** Hamza
+## Features
 
----
+### Transaction Management
+- Add income and expense transactions with amount, date, category, and optional description.
+- View, edit, and delete transaction records.
+- Filter transaction history by date range, category, and transaction type.
 
-## 1. Project Overview & Features
+### Budget Management
+- Configure monthly spending limits for individual categories.
+- Track spending progress against each budget.
+- Generate a warning when spending reaches 80% of a category budget.
+- Generate a critical alert when spending reaches or exceeds 100% of a category budget.
 
-ExpenseMate provides a full-featured personal finance management platform with automatic budget tracking, interactive analytics, and bulk data management.
+### Analytics and Visualizations
+- View total income, total expenses, net savings, and savings rate.
+- Explore category spending distribution using Matplotlib pie charts.
+- Compare category totals using bar charts.
+- Select a month and year for period-based analytics.
 
-### Key Capabilities
+### CSV Import and Export
+- Import transactions in bulk with row-by-row validation so malformed rows can be handled without failing the entire import.
+- Export transaction history to CSV, with supported date, category, and transaction-type filters.
 
-1. **Add Income & Expense Transactions:** Enter transaction type, amount, date, category, and optional notes.
-2. **Edit & Delete Transactions:** Seamlessly update or remove transaction records.
-3. **Monthly Category Budgets:** Configure monthly spending limits by category with real-time progress tracking.
-4. **Automatic Budget Alerts:**
-   * **Warning Alert (80%):** Automatically triggered when spending reaches 80% of a category's budget.
-   * **Critical Alert (100%):** Automatically triggered when spending reaches or exceeds 100% of a category's budget.
-5. **CSV Import:** Bulk import transactions with resilient row-by-row validation (malformed rows do not crash the batch).
-6. **CSV Export:** Export transaction history filtered by date range, category, or transaction type to standard CSV format.
-7. **Interactive Analytics & Visualizations:**
-   * Key financial metrics: Total Income, Total Expenses, Net Savings, Savings Rate.
-   * Category spending distribution (Matplotlib Pie Chart).
-   * Category totals breakdown (Matplotlib Bar Chart).
-   * Period selection by year and month.
-8. **Transaction History & Filtering:** View, sort, and filter transactions by date range, category, or type.
+## Technology Stack
 
----
+| Technology | Purpose |
+|---|---|
+| Python | Application programming language |
+| Tkinter / ttk | Desktop graphical user interface |
+| Flask | REST API server |
+| Requests | HTTP communication between client and server |
+| SQLite | Relational database |
+| Matplotlib | Financial charts and visualizations |
+| Pytest | Automated tests |
+| pytest-cov | Test coverage reports |
+| Git / GitHub | Version control and collaboration |
 
-## 2. Architecture & Design
+## Architecture
 
-The application enforces a strict **Client-Server Architecture** with decoupled layers:
+ExpenseMate uses a client-server architecture with a layered backend.
 
 ```text
-Desktop Client (Tkinter GUI - Rafay's Module)
-       │
-       │ HTTP / REST API (JSON)
-       ▼
-Client API Layer (api_client.py)
-       │
-       │ Requests Session
-       ▼
-Flask REST API Server (Hamza's Module)
-       │
-       ▼
+Tkinter Desktop Client
+        |
+        v
+Client API Layer (client/api_client.py)
+        |
+        | HTTP requests / JSON responses
+        v
+Flask REST API (server/app.py)
+        |
+        v
 Route Blueprints (server/routes/)
-       │
-       ▼
-Business Services Layer (server/services/)
-       │
-       ▼
-Data Access Repositories (server/repositories/)
-       │
-       ▼
+        |
+        v
+Business Services (server/services/)
+        |
+        v
+Data Repositories (server/repositories/)
+        |
+        v
 SQLite Database (data/expensemate.db)
 ```
 
-### Architectural Principles
+### Request Flow
 
-* **Decoupled Client & Server:** The client never directly queries SQLite; all communication flows via the REST API through `api_client.py`.
-* **Repository Pattern:** Pure SQL operations and parameterized queries are isolated from business rules.
-* **Service Layer:** Business rules (validation, threshold calculations, alerts, CSV parsing) live exclusively in dedicated services.
-* **Single-Command Runner:** `run.py` launches both the backend server and desktop GUI seamlessly, verifying health before showing the window and cleaning up resources upon closing.
+1. A user performs an action in the Tkinter interface.
+2. The client API layer sends an HTTP request to the Flask server.
+3. A route validates and dispatches the request to the relevant service.
+4. The service applies business rules and calls a repository.
+5. The repository reads or updates the SQLite database.
+6. The API returns a JSON response, and the client updates the interface.
 
----
+### Design Principles
+- **Separation of concerns:** UI, HTTP communication, business logic, and data access are separated.
+- **Service layer:** Transaction validation, budget calculations, alert evaluation, analytics, and CSV processing are handled in service modules.
+- **Repository pattern:** SQL operations are isolated in repository modules and use parameterized queries.
+- **Centralized launcher:** `run.py` initializes the database, starts the server, checks server health, launches the desktop client, and shuts down the server when the client closes.
 
-## 3. Folder Structure
+## Project Structure
 
 ```text
 ExpenseMate-Personal-Expense-Manager/
-├── run.py                          # Unified launcher (starts server + client)
-├── requirements.txt                # Project dependencies
-├── README.md                       # Comprehensive documentation
+├── run.py
+├── requirements.txt
+├── README.md
 ├── data/
-│   └── expensemate.db              # SQLite database storage
-│
-├── client/                         # Rafay's Module (Desktop Client)
-│   ├── __init__.py
-│   ├── main.py                     # Standalone client launcher
-│   ├── api_client.py               # Centralized HTTP API client
+│   └── expensemate.db
+├── client/
+│   ├── main.py
+│   ├── api_client.py
 │   └── ui/
-│       ├── __init__.py
-│       ├── main_window.py          # Primary tabbed application window
-│       ├── transaction_form.py     # Add/Edit transaction form
-│       ├── budget_view.py          # Monthly category budget management
-│       ├── history_view.py         # Transaction history table & filtering
-│       ├── charts_view.py          # Embedded Matplotlib charts & KPIs
-│       └── csv_dialog.py           # CSV import & export interface
-│
-├── server/                         # Hamza's Module (Backend & Database)
-│   ├── __init__.py
-│   ├── app.py                      # Flask application factory
-│   ├── database.py                 # SQLite schema, connection, and seeding
-│   ├── routes/                     # REST API blueprints
-│   │   ├── __init__.py
-│   │   ├── transactions.py         # Transaction CRUD endpoints
-│   │   ├── categories.py           # Category endpoints
-│   │   ├── budgets.py              # Budget endpoints
-│   │   ├── analytics.py            # Analytics & aggregation endpoints
-│   │   └── csv_io.py               # CSV import/export endpoints
-│   ├── services/                   # Business logic layer
-│   │   ├── __init__.py
-│   │   ├── transaction_service.py  # Transaction validation & orchestration
-│   │   ├── budget_service.py       # Budget progress calculation
-│   │   ├── alert_service.py        # 80% & 100% threshold alert evaluation
-│   │   ├── analytics_service.py    # Report aggregations & chart data
-│   │   └── csv_service.py          # Resilient CSV parsing & generation
-│   └── repositories/               # Data access layer (SQL)
-│       ├── __init__.py
-│       ├── transaction_repository.py
-│       ├── category_repository.py
-│       └── budget_repository.py
-│
-└── tests/                          # Test suite (Unit, Integration, System)
-    ├── __init__.py
-    ├── conftest.py                 # Isolated test database fixtures
+│       ├── main_window.py
+│       ├── transaction_form.py
+│       ├── budget_view.py
+│       ├── history_view.py
+│       ├── charts_view.py
+│       └── csv_dialog.py
+├── server/
+│   ├── app.py
+│   ├── database.py
+│   ├── routes/
+│   ├── services/
+│   └── repositories/
+└── tests/
     ├── unit/
-    │   ├── __init__.py
-    │   ├── test_transaction_service.py
-    │   ├── test_budget_service.py
-    │   ├── test_alert_service.py
-    │   ├── test_analytics_service.py
-    │   ├── test_csv_service.py
-    │   └── test_api_client.py
     ├── integration/
-    │   ├── __init__.py
-    │   └── test_api.py             # Flask endpoint integration tests
     └── system/
-        ├── __init__.py
-        └── test_end_to_end.py      # End-to-end workflow test
 ```
 
----
+The folders contain additional modules, including route blueprints, service and repository classes, test fixtures, and individual test files.
 
-## 4. Technologies
+## Installation
 
-* **Language:** Python 3.10+ (tested on Python 3.14)
-* **Backend:** Flask 3.1+ (REST API, application factory pattern)
-* **Database:** SQLite 3 (with foreign key enforcement and parameterized queries)
-* **Client UI:** Python `tkinter` & `ttk` (standard library desktop GUI)
-* **HTTP Client:** `requests`
-* **Data Visualization:** `matplotlib` (embedded in GUI via `FigureCanvasTkAgg`)
-* **Testing:** `pytest` & `pytest-cov`
+### Prerequisites
+- Python 3.10 or later
+- pip
+- Tkinter support for your Python installation
 
----
-
-## 5. Installation & Setup
-
-### Step 1: Clone or Navigate to the Workspace
+### 1. Clone the repository
 
 ```bash
-cd SCD_Assignment01
+git clone https://github.com/AuraHamza/ExpenseMate-Personal-Expense-Manager.git
+cd ExpenseMate-Personal-Expense-Manager
 ```
 
-### Step 2: Create a Virtual Environment (Optional but Recommended)
+If the repository is already on your computer, open a terminal in the project root (the folder containing `run.py`).
 
+### 2. Create a virtual environment (recommended)
+
+**Windows**
 ```bash
 python -m venv venv
+venv\\Scripts\\activate
 ```
 
-Activate the virtual environment:
+**macOS / Linux**
+```bash
+python3 -m venv venv
+source venv/bin/activate
+```
 
-* **Windows:**
-  ```bash
-  venv\Scripts\activate
-  ```
-* **macOS / Linux:**
-  ```bash
-  source venv/bin/activate
-  ```
-
-### Step 3: Install Dependencies
+### 3. Install dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
----
+## Running the Application
 
-## 6. How to Run ExpenseMate
+### Run both server and desktop client
 
-### Option A: Standard Launch (Server + Client in One Command)
+From the project root:
 
 ```bash
 python run.py
 ```
 
-This will:
-1. Initialize the SQLite database schema at `data/expensemate.db` (and seed default categories).
-2. Start the Flask server on `http://127.0.0.1:5000` in a background thread.
-3. Verify server readiness via the `/api/health` endpoint.
-4. Launch the desktop GUI client.
-5. Cleanly shut down the server when the desktop application is closed.
+The launcher initializes the SQLite schema and default categories, starts the Flask API (normally at `http://127.0.0.1:5000`), checks the `/api/health` endpoint, and opens the desktop GUI. If the preferred port is already occupied, the launcher checks for another available port.
 
-### Option B: Separate Server and Client Terminals
+### Run the server only
 
-* **Start Server Only:**
-  ```bash
-  python run.py --server-only
-  # or: python -m server.app
-  ```
+```bash
+python run.py --server-only
+```
 
-* **Start Client Only:**
-  ```bash
-  python run.py --client-only
-  # or: python -m client.main
-  ```
+### Run the client only
 
----
+Start the server separately first, then run:
 
-## 7. How to Run Tests
+```bash
+python run.py --client-only
+```
 
-All tests run in isolated temporary SQLite databases so your local `data/expensemate.db` data is never modified.
+The client must be able to reach the backend at the configured host and port.
 
-### Run All Tests
+## REST API Reference
+
+The API returns JSON responses. A successful response generally includes a `success` field and `data`; errors include `success: false` and a readable `error` message.
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/health` | Check server health |
+| `GET` | `/api/categories` | List categories |
+| `POST` | `/api/categories` | Create a custom category |
+| `GET` | `/api/transactions` | List transactions; supports date, category, and type filters |
+| `POST` | `/api/transactions` | Create a transaction and return any relevant budget alert |
+| `GET` | `/api/transactions/<id>` | Retrieve a transaction |
+| `PUT` | `/api/transactions/<id>` | Update a transaction |
+| `DELETE` | `/api/transactions/<id>` | Delete a transaction |
+| `GET` | `/api/budgets` | List monthly budgets with spending progress |
+| `POST` | `/api/budgets` | Create or set a monthly category budget |
+| `PUT` | `/api/budgets/<id>` | Update a budget |
+| `DELETE` | `/api/budgets/<id>` | Delete a budget |
+| `GET` | `/api/analytics` | Retrieve financial metrics and spending breakdowns |
+| `POST` | `/api/csv/import` | Import transactions from CSV |
+| `GET` | `/api/csv/export` | Export filtered transactions to CSV |
+
+## Database Schema
+
+The SQLite database is stored at `data/expensemate.db` by default and is initialized by `server/database.py`.
+
+### Categories
+- `id`: integer primary key
+- `name`: unique category name
+
+### Transactions
+- `id`: integer primary key
+- `type`: `income` or `expense`
+- `amount`: positive transaction amount
+- `date`: transaction date in `YYYY-MM-DD` format
+- `category_id`: foreign key to categories
+- `description`: optional description
+- `created_at`, `updated_at`: timestamps
+
+### Budgets
+- `id`: integer primary key
+- `category_id`: foreign key to categories
+- `month`, `year`: budget period
+- `amount`: budget amount
+- `created_at`, `updated_at`: timestamps
+- A category can have one budget per month and year.
+
+## Testing
+
+Tests use isolated temporary SQLite databases so they do not modify the normal local database.
+
+Run all tests:
 
 ```bash
 pytest
 ```
 
-### Run with Verbose Output
+Run with verbose output:
 
 ```bash
 pytest -v
 ```
 
-### Run with Code Coverage Report
+Run tests with coverage:
 
 ```bash
 pytest --cov=server --cov=client tests/
 ```
 
-### Run by Test Suite Category
+Run a specific suite:
 
-* **Unit Tests:**
-  ```bash
-  pytest tests/unit/ -v
-  ```
-* **Integration Tests:**
-  ```bash
-  pytest tests/integration/ -v
-  ```
-* **System / End-to-End Workflow Test:**
-  ```bash
-  pytest tests/system/ -v
-  ```
+```bash
+pytest tests/unit/ -v
+pytest tests/integration/ -v
+pytest tests/system/ -v
+```
 
----
+## Software Engineering Practices
 
-## 8. REST API Reference
+- Modular organization of client, routes, services, and repositories.
+- REST API communication using HTTP and JSON.
+- Input validation and application-level business rules in service modules.
+- Parameterized SQL queries and database constraints.
+- Unit, integration, and end-to-end testing.
+- Git-based source control and team collaboration.
 
-All responses return standard JSON envelopes:
+## Team
 
-* **Success:** `{"success": true, "data": { ... }}`
-* **Error:** `{"success": false, "error": "Human readable message"}`
-
-| Method | Endpoint | Description |
+| Team Member | Student ID | Responsibility |
 |---|---|---|
-| `GET` | `/api/health` | Service health status check |
-| `GET` | `/api/categories` | List all predefined and custom categories |
-| `POST` | `/api/categories` | Create a new custom category |
-| `GET` | `/api/transactions` | Query transactions (`start_date`, `end_date`, `category_id`, `type`) |
-| `POST` | `/api/transactions` | Add transaction (returns transaction and any budget alert) |
-| `GET` | `/api/transactions/<id>` | Retrieve a single transaction |
-| `PUT` | `/api/transactions/<id>` | Update transaction |
-| `DELETE` | `/api/transactions/<id>` | Delete transaction |
-| `GET` | `/api/budgets` | List monthly category budgets with spending progress |
-| `POST` | `/api/budgets` | Set / Upsert monthly category budget |
-| `PUT` | `/api/budgets/<id>` | Update budget amount |
-| `DELETE` | `/api/budgets/<id>` | Delete budget |
-| `GET` | `/api/analytics` | Aggregated metrics, category breakdown, and monthly trends |
-| `POST` | `/api/csv/import` | Import transactions from CSV |
-| `GET` | `/api/csv/export` | Export filtered transactions to CSV |
+| Hamza Salahuddin | 24K-3065 | Backend, REST API, and database |
+| Rafay Ansari | 24K-3095 | Desktop client and user interface |
 
 ---
 
-## 9. Database Schema
-
-The database is stored in `data/expensemate.db` and managed by `server/database.py`.
-
-### `categories`
-* `id` INTEGER PRIMARY KEY AUTOINCREMENT
-* `name` TEXT UNIQUE NOT NULL
-
-### `transactions`
-* `id` INTEGER PRIMARY KEY AUTOINCREMENT
-* `type` TEXT NOT NULL CHECK(type IN ('income', 'expense'))
-* `amount` REAL NOT NULL CHECK(amount > 0)
-* `date` TEXT NOT NULL (YYYY-MM-DD)
-* `category_id` INTEGER NOT NULL (FOREIGN KEY -> categories.id)
-* `description` TEXT
-* `created_at` TEXT
-* `updated_at` TEXT
-
-### `budgets`
-* `id` INTEGER PRIMARY KEY AUTOINCREMENT
-* `category_id` INTEGER NOT NULL (FOREIGN KEY -> categories.id)
-* `month` INTEGER NOT NULL CHECK(month BETWEEN 1 AND 12)
-* `year` INTEGER NOT NULL CHECK(year >= 2000)
-* `amount` REAL NOT NULL CHECK(amount >= 0)
-* `created_at` TEXT
-* `updated_at` TEXT
-* `UNIQUE(category_id, month, year)`
+**ExpenseMate — Track expenses. Manage budgets. Understand your spending.**
