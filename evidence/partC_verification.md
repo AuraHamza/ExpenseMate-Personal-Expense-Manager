@@ -342,3 +342,156 @@ None. All checks passed.
 - `AnalyticsService`: **GENUINE REWRITE** (monolith decomposed into 4-stage pipeline, CC 10 -> 2).
 - `CsvService`: **MOSTLY REFACTOR / MIXED** (field extraction & constants added, core ingestion flow preserved).
 - Documentation accuracy: **CAVEATS NOTED** (`import_transactions_from_csv` CC remains 7; responsibility counts are qualitative judgments; GUI not run interactively).
+
+
+---
+
+## PART 4: FOLLOW-UP FIX — Genuine CsvService Rewrite (Part C Continuation)
+
+> **Context**: The follow-up audit in PART 3 found that the initial CsvService "rewrite" was structurally a **mostly refactor / mixed** outcome — class CC stayed at 5, `import_transactions_from_csv` stayed at CC 7, and SLOC rose 133 → 144 without changing the monolithic single-class structure. Part C requires at least two genuine rewrites. This section records the corrective action.
+
+### Fix: What Changed
+
+The module `server/services/csv_service.py` was genuinely decomposed into **4 single-responsibility classes**:
+
+| Class | Responsibility |
+|---|---|
+| `CsvHeaderParser` | RFC 4180 header validation and column name-to-index mapping |
+| `CsvRowMapper` | Cell field extraction with defaults, category resolution, row ingestion |
+| `CsvExporter` | RFC 4180 CSV serialization and numeric formatting |
+| `CsvService` | Thin facade — wires the three components, preserves public API |
+
+### Check 1 (Git) — Re-confirmed at time of fix
+- Branch: `assignment02`
+- Working tree clean after commit: **PASS** (confirmed via `git status`)
+- Tag `v1-assignment01`: exists, points to `2bc671c` — **PASS**
+
+### Check 4 (Genuine Rewrite Assessment) — Updated verdict
+
+**`CsvService` → GENUINE REWRITE**
+
+Old implementation: one monolithic 188-line class with all CSV logic inlined.
+
+New implementation: 4 separate classes in one module (269 LOC). Each is independently instantiable and unit-testable without a database:
+
+```python
+# CsvHeaderParser — no repository or service dependencies
+parser = CsvHeaderParser()
+col_map = parser.parse_header(["Type", "Amount", "Date", "Category"])
+
+# CsvRowMapper — takes category_repo + transaction_service via constructor
+mapper = CsvRowMapper(category_repo=mock_cat_repo, transaction_service=mock_tx_service)
+valid, alert = mapper.map_and_ingest_row(row, col_map)
+
+# CsvExporter — takes only transaction_repo
+exporter = CsvExporter(transaction_repo=mock_tx_repo)
+csv_text = exporter.export()
+
+# CsvService — thin facade, still callable identically by all callers
+service = CsvService(db_path="...")
+result = service.import_transactions_from_csv(csv_content)
+```
+
+The public interface (`import_transactions_from_csv`, `export_transactions_to_csv`) is 100% backward compatible. All private methods (`_parse_and_validate_header`, `_resolve_category_id`, `_extract_row_field`, `_process_csv_row`) now delegate to the appropriate component class.
+
+### Real Radon Measurements After Genuine Rewrite (from live run)
+
+**`CsvService` module (all 4 classes combined):**
+- SLOC: **198** (was 133 baseline, was 144 after first attempt)
+- LOC: 269, LLOC: 136
+
+| Block | Type | CC After | CC Before |
+|---|---|:---:|:---:|
+| `CsvHeaderParser` | Class | 5 | — |
+| `CsvHeaderParser.parse_header` | Method | **4** | 5 (`_parse_and_validate_header`) |
+| `CsvRowMapper` | Class | 4 | — |
+| `CsvRowMapper.extract_field` | Method | **3** | 3 |
+| `CsvRowMapper.resolve_category_id` | Method | **3** | 3 |
+| `CsvRowMapper.map_and_ingest_row` | Method | **4** | 6 (`_process_csv_row`) |
+| `CsvExporter` | Class | 3 | — |
+| `CsvExporter.export` | Method | **2** | 2 |
+| `CsvService` (facade) | Class | **3** ↓ | 5 |
+| `CsvService._ingest_stream` | Method | **5** | — (new, extracted from import) |
+| `CsvService.import_transactions_from_csv` | Method | **3** ↓ | 7 |
+| `CsvService._process_csv_row` | Method | **1** ↓ | 6 |
+| `CsvService._parse_and_validate_header` | Method | **2** ↓ | 5 |
+| `CsvService.export_transactions_to_csv` | Method | **1** ↓ | 2 |
+
+**`AnalyticsService` — unchanged from genuine rewrite in PART 3:**
+- SLOC: 106 (was 89), LOC: 146, LLOC: 65
+- `get_financial_summary`: **CC = 2** (was 10)
+- Class CC: **4** (was 8)
+
+### Check 9 (Tests) — Post-fix
+
+```text
+76 passed in 5.01s
+```
+- `tests/unit/test_partC_characterization.py` (8 tests): `8 passed` — **PASS**
+- `tests/unit/test_partC_rewrites.py` (12 tests — includes new isolated tests for `CsvHeaderParser`, `CsvRowMapper`, `CsvExporter`): `12 passed` — **PASS**
+- Characterization test file git hash: `8258b9bec37899a9039997ed5d25bc4a49401c59` — **UNCHANGED** (identical to baseline commit `f1aab75`)
+
+### Check 6 (CSV Behaviour Diff) — `evidence/partC_csv_behaviour_diff.txt`
+
+```text
+IMPORT BASE: {"alerts": [], "errors": [], "failed_count": 0, "imported_count": 2, "total_rows_processed": 2}
+IMPORT NEW:  {"alerts": [], "errors": [], "failed_count": 0, "imported_count": 2, "total_rows_processed": 2}
+Diff: NONE (Exact match: True)
+
+Headers: "ID,Type,Amount,Date,Category,Description,Created At" — identical on both.
+Export content (excluding dynamic created_at timestamp): MATCH True.
+```
+
+Old-format CSV import (no Currency column): **PASS** — imported successfully, stored with `currency = 'PKR'`.
+
+### Check 13 (Part B Layering Invariants) — Verified post-fix
+
+Commands and real output:
+
+```bash
+$ git grep -i -E "import.*sqlite|sqlite3|flask|request|jsonify" server/services/
+# No output — PASS (no Flask/sqlite3 imports in services)
+
+$ git grep -i -E "SELECT |INSERT |UPDATE |DELETE " server/services/
+# Only in docstrings of service methods — PASS (no raw SQL strings)
+
+$ git grep -n "import sqlite3" server/routes/
+# No output — PASS
+
+$ git grep -n "from server.repositories" server/routes/
+# No output — PASS (routes do not import repositories directly)
+
+$ git grep -n "from server.routes|from server.services" server/repositories/
+# No output — PASS (repositories have no upward imports)
+```
+
+Architecture test suite: `tests/unit/test_architecture_layers.py` — **8 passed**.
+
+### Check 10 (Real DB Untouched)
+- SHA256 before: `9da4099f0c3f48f7159d47e01a3d30ff3a97bee35c8861af4189262bb611dec8`
+- SHA256 after:  `9da4099f0c3f48f7159d47e01a3d30ff3a97bee35c8861af4189262bb611dec8`
+- **MATCH: True** — real DB untouched.
+
+### Documentation Corrections Applied
+| Document | Corrected |
+|---|---|
+| `docs/rewriting_report.md` | Removed "100% isolated unit testability" overclaim; removed "completely decouples CSV handling from side-effects" claim; documented CsvService as 4-class decomposition; noted responsibilities are design judgments |
+| `docs/partC_comparison.md` | Updated table with real CC values; noted responsibilities are qualitative; corrected all CC figures; added SLOC honest note (+48.9%) |
+| `docs/rewrite_candidates.md` | Clarified that responsibility counts are design judgments; improved rewrite justification |
+| `docs/class_rewrites.md` | Replaced single-class "after" diagram with 4-class decomposition Mermaid diagram |
+| `CHANGELOG.md` | Updated CsvService rewrite entry to describe genuine 4-class decomposition |
+| `evidence/metrics_partC_after.txt` | Replaced incorrect claim `import_transactions_from_csv (CC=6, down from 7)` with real measured values: CC=3 after rewrite; stated all CC measurements from live radon cc runs |
+
+---
+
+## REVISED FINAL VERDICT
+
+**REWRITING COMPLETE — Genuine rewrites confirmed for both classes:**
+
+| Class | Verdict | Key Evidence |
+|---|---|---|
+| `AnalyticsService` | **GENUINE REWRITE** | 62-line monolith → 4-stage pipeline; `get_financial_summary` CC: 10 → 2; isolated pure-function tests added |
+| `CsvService` | **GENUINE REWRITE** | 1 monolithic class → 4 single-responsibility classes (`CsvHeaderParser`, `CsvRowMapper`, `CsvExporter`, `CsvService` facade); `import_transactions_from_csv` CC: 7 → 3; each sub-class unit-testable without a database |
+| Test suite | **76 / 76 PASS** | All characterization, unit, integration, and system tests pass |
+| Real DB | **UNTOUCHED** | SHA256 hash identical before and after all work |
+| Layering | **INTACT** | No SQL or Flask imports in services; no repository imports in routes; strict downward dependency chain |
