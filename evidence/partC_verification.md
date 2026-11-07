@@ -133,6 +133,212 @@ None. All checks passed.
 
 ---
 
-## Verdict
+## PART 3: FOLLOW-UP AUDIT & INVESTIGATION
 
-REWRITING COMPLETE: All checks passed. Real outputs verified against live code, metrics, and test runs.
+### 1. Test Suite Re-run & Line-Ending Diff Verification
+- **Full Pytest Execution**:
+  ```text
+  ============================= 70 passed in 4.76s ==============================
+  ```
+  All 70 tests pass without failures or errors.
+- **Line-Ending Verification**:
+  `git diff 2f93c55 -- docs/ tests/` outputs exactly empty (0 lines).
+  `git diff 2f93c55 --ignore-space-at-eol --stat` confirms that only `evidence/partC_verification.md` is modified; no code, doc, or test files were altered by the revert.
+
+### 2. Execution of Follow-Up Audit Checks
+- **Original Check 4 (Old vs New implementation side-by-side & structural assessment)**: Run (detailed below in Section 3).
+- **Original Check 9 (Pytest suite passes; isolated unit tests with mocks)**:
+  Real output: `70 passed in 4.76s`. `tests/unit/test_partC_rewrites.py` tests isolated methods (`_compute_summary`, `_build_category_breakdown`, `_build_monthly_trends`, `_extract_row_field`) directly without database calls.
+- **Original Check 14 (Re-run radon cc/raw on old and new files)**:
+  - Baseline `CsvService`: `radon cc` -> `__init__`: 4, `_parse_and_validate_header`: 5, `_resolve_category_id`: 3, `_process_csv_row`: 6, `import_transactions_from_csv`: 7, `export_transactions_to_csv`: 2. Class CC: 5. `radon raw` -> SLOC: 133, LOC: 176, LLOC: 87.
+  - Rewritten `CsvService`: `radon cc` -> `__init__`: 4, `_parse_and_validate_header`: 5, `_resolve_category_id`: 3, `_extract_row_field`: 3, `_process_csv_row`: 4, `import_transactions_from_csv`: 7, `export_transactions_to_csv`: 2. Class CC: 5. `radon raw` -> SLOC: 144, LOC: 188, LLOC: 97.
+  - Baseline `AnalyticsService`: `radon cc` -> `__init__`: 3, `get_financial_summary`: 10. Class CC: 8. `radon raw` -> SLOC: 89, LOC: 112, LLOC: 41.
+  - Rewritten `AnalyticsService`: `radon cc` -> `__init__`: 3, `_validate_period`: 4, `_compute_summary`: 2, `_build_category_breakdown`: 4, `_build_monthly_trends`: 2, `get_financial_summary`: 2. Class CC: 4. `radon raw` -> SLOC: 106, LOC: 146, LLOC: 65.
+- **Original Check 16 (Clarify responsibilities and hardcoded header sets)**: Run and clarified (detailed in Section 5).
+- **Original Check 17 (docs/partC_comparison.md honest metric reporting)**: Verified. Table matches radon outputs and explicitly justifies SLOC increase (+8.2% and +19.1%).
+- **Original Check 18 (Required documents exist)**: `docs/rewrite_candidates.md`, `docs/rewriting_report.md`, `docs/class_rewrites.md`, and `CHANGELOG.md` all exist, are committed, and contain required diagrams, examples, and rationales.
+- **Original Check 19 (Check for unsupported claims)**: Analyzed below in Section 7.
+- **Original Check 20 (Unfinished items or limitations)**: Desktop GUI was NOT launched interactively (NOT RUN; verified headlessly).
+
+### 3. Check 4: Honest Assessment of Old vs. New Implementation
+
+#### A. `server/services/csv_service.py` (`CsvService`)
+- **Old Implementation**:
+  ```python
+  def _process_csv_row(self, row: List[str], col_map: Dict[str, int], desc_idx: int) -> Dict[str, Any]:
+      trans_type = row[col_map["type"]].strip().lower()
+      raw_amount = row[col_map["amount"]].strip()
+      date_str = row[col_map["date"]].strip()
+      cat_name = row[col_map["category"]].strip()
+      desc = row[desc_idx].strip() if desc_idx != -1 and desc_idx < len(row) else ""
+      category_id = self._resolve_category_id(cat_name)
+      amount = float(raw_amount)
+      tx = self.transaction_service.create_transaction(trans_type, amount, date_str, category_id, desc)
+      return tx
+  ```
+- **New Implementation**:
+  ```python
+  def _extract_row_field(self, row: List[str], col_map: Dict[str, int], col_name: str, default: str = "") -> str:
+      idx = col_map.get(col_name, -1)
+      if idx != -1 and idx < len(row):
+          return row[idx].strip()
+      return default
+
+  def _process_csv_row(self, row: List[str], col_map: Dict[str, int]) -> Dict[str, Any]:
+      trans_type = self._extract_row_field(row, col_map, "type").lower()
+      raw_amount = self._extract_row_field(row, col_map, "amount")
+      date_str = self._extract_row_field(row, col_map, "date")
+      cat_name = self._extract_row_field(row, col_map, "category")
+      desc = self._extract_row_field(row, col_map, "description", default="")
+      currency = self._extract_row_field(row, col_map, "currency", default="PKR")
+      category_id = self._resolve_category_id(cat_name)
+      amount = float(raw_amount)
+      return self.transaction_service.create_transaction(
+          trans_type=trans_type, amount=amount, date_str=date_str,
+          category_id=category_id, description=desc, currency=currency
+      )
+  ```
+- **Verdict**: **Mostly Refactor / Mixed**
+  - **Reason**: The high-level workflow (`import_transactions_from_csv` reading with `csv.reader`, resolving headers, iterating rows, and calling `_process_csv_row`) remains essentially the same algorithm. What changed is: (1) introduction of class-level constants (`REQUIRED_COLUMNS`, `OPTIONAL_COLUMNS`, `DEFAULT_EXPORT_HEADERS`), (2) extraction of `_extract_row_field` eliminating raw array index passing (`desc_idx`), (3) schema v2 currency awareness during import. It is a high-quality refactor with clean abstractions rather than a fundamentally reimagined architecture.
+
+#### B. `server/services/analytics_service.py` (`AnalyticsService`)
+- **Old Implementation**:
+  Monolithic 62-line method `get_financial_summary(year, month, category_id)`:
+  - Lines 30–33: Month range validation.
+  - Lines 35–42: Repository total fetch and summary dict construction.
+  - Lines 44–68: Category spending query, loop, float conversion, percentage calculation, and chart formatting.
+  - Lines 70–88: Monthly trend query, 12-month calendar loop, `calendar.month_abbr` mapping, zero-filling.
+- **New Implementation**:
+  Decomposed into 4 focused helper methods + 1 coordinator:
+  1. `_validate_period(month)`: Pure validation (CC=4).
+  2. `_compute_summary(totals)`: Pure arithmetic for net savings & savings rate (CC=2).
+  3. `_build_category_breakdown(raw_breakdown, total_expense)`: Pure transformation for chart labels/values (CC=4).
+  4. `_build_monthly_trends(raw_monthly)`: Pure calendar mapping (CC=2).
+  5. `get_financial_summary(year, month, category_id)`: High-level coordinator pipeline (CC=2).
+- **Verdict**: **Genuine Rewrite**
+  - **Reason**: The procedural monolithic script was completely replaced with a staged computational pipeline. The coordinator no longer contains any inline mathematical operations, loops, or calendar logic. The internal structure, data flow, and unit-testability of every individual calculation stage represent a genuinely new design.
+
+---
+
+### 4. Resolution of Cyclomatic Complexity for `import_transactions_from_csv`
+- **Real Radon Output on Baseline**:
+  Running `radon cc -s` on commit `f1aab75` yields:
+  ```text
+  import_transactions_from_csv - CC = 7
+  _process_csv_row - CC = 6
+  ```
+- **Real Radon Output on Rewritten (HEAD)**:
+  ```text
+  import_transactions_from_csv - CC = 7
+  _process_csv_row - CC = 4
+  ```
+- **Discrepancy Resolution**:
+  - `docs/rewrite_candidates.md` was **correct** in stating `import_transactions_from_csv` had CC=7 and `_process_csv_row` had CC=6.
+  - In `evidence/metrics_partC_after.txt`, the note under `=== RESPONSIBILITIES & SMELLS AFTER REWRITE ===` claimed:
+    `import_transactions_from_csv (CC=6, down from 7)`
+    This note was **factually incorrect**: radon confirms `import_transactions_from_csv` remains **CC = 7** both before and after the rewrite (because the outer loop, try/except blocks, and row validation checks were preserved).
+  - The method whose complexity dropped from 6 to 4 is **`_process_csv_row`**, as accurately reflected in the radon dump.
+
+---
+
+### 5. Responsibilities and Header Sets: Measurement and Disclosure
+- **How Responsibilities Were Counted**:
+  - **Old `CsvService` (5 roles)**: (1) RFC 4180 header validation, (2) dynamic column-to-index mapping, (3) on-the-fly category existence resolution, (4) raw array row-cell parsing and type casting, (5) CSV serialization.
+  - **New `CsvService` (2 roles)**: (1) Ingestion orchestration (delegating field retrieval to `_extract_row_field` and business creation to `TransactionService`), (2) Export format generation.
+  - **Old `AnalyticsService` (4 roles)**: (1) Input validation, (2) Financial totals math, (3) Chart breakdown formatting, (4) 12-month calendar aggregation.
+  - **New `AnalyticsService` (1 role)**: Coordinating the reporting pipeline across modular transformers.
+- **How Hardcoded Header Sets (2 -> 0) Were Counted**:
+  - **Old**: Two raw inline list literals in methods (`["ID", "Type", "Amount", "Date", "Category", "Description", "Created At"]` in `export_transactions_to_csv`, and `{"type", "amount", "date", "category"}` in `_parse_and_validate_header`).
+  - **New**: Zero inline literals; centralized into declared class constants (`REQUIRED_COLUMNS`, `OPTIONAL_COLUMNS`, `DEFAULT_EXPORT_HEADERS`).
+- **Disclosure in Docs**:
+  Neither `docs/partC_comparison.md` nor `docs/rewriting_report.md` explicitly noted that "number of responsibilities" is an architectural qualitative judgment rather than an automated tool metric. They are design assessments following the Single Responsibility Principle.
+
+---
+
+### 6. CSV Format & Interface Changes
+- **Does Exported CSV Include a Currency Column?**:
+  **NO**. Live inspection of `export_transactions_to_csv()` confirms the headers remain:
+  `ID,Type,Amount,Date,Category,Description,Created At`
+  The Currency column is intentionally **NOT** in the default CSV export to preserve 100% backward compatibility with client expectations and existing tests.
+- **Does Importing an Old-Format CSV (Without Currency) Still Work?**:
+  **YES**. Tested on live code:
+  ```python
+  csv_service.import_transactions_from_csv("Type,Amount,Date,Category,Description\nexpense,45.50,2026-03-01,Food,Lunch\n")
+  # Result: {'total_rows_processed': 1, 'imported_count': 1, 'failed_count': 0, 'errors': [], 'alerts': []}
+  # Stored in DB with currency = 'PKR'
+  ```
+- **Is the Change Documented as an Intentional Interface Change?**:
+  **NO**. There was no intentional interface change made to public method signatures or export formats. The docs specifically state: *"Both rewrites preserved 100% of public behavior and API responses"*. The phrase "intentional interface change" does not appear in `docs/rewriting_report.md` because the public interface was preserved.
+
+---
+
+### 7. Statements in Docs Not Supported by Evidence
+1. **"import_transactions_from_csv (CC=6, down from 7)"** in `evidence/metrics_partC_after.txt`:
+   - *Status*: **UNSUPPORTED / INCORRECT**. Radon cc measures `import_transactions_from_csv` at **CC = 7** both before and after the rewrite.
+2. **"100% isolated unit testability"** in `docs/rewriting_report.md`:
+   - *Status*: **OVERSTATED**. While the pure calculation methods (`_compute_summary`, `_build_category_breakdown`, `_build_monthly_trends`, `_extract_row_field`) are 100% unit-testable in isolation without mocks or databases, the public orchestrator methods `get_financial_summary` and `import_transactions_from_csv` still collaborate with repositories and services, requiring mocks for isolated testing.
+3. **"Completely decouples CSV text handling from database/service side-effects"** in `docs/rewrite_candidates.md`:
+   - *Status*: **ASPIRATIONAL / NOT IMPLEMENTED**. `CsvService` still directly calls `self.category_repo.create(...)` and `self.transaction_service.create_transaction(...)`. It was not split into separate standalone `CsvParser` / `CsvWriter` classes.
+
+---
+
+### 8. Items Not Run or Not Tested
+- **Desktop GUI (`client/ui/`)**: **NOT RUN INTERACTIVELY**. The Tkinter desktop GUI was not launched in a live display session during this audit (server and API client were tested headlessly via pytest and direct HTTP simulation).
+- **Physical Currency Conversion**: **NOT RUN / NOT IMPLEMENTED**. The system supports storing multi-currency labels (`currency` column defaulting to `'PKR'`), but exchange rate conversion math was not part of the Part C scope.
+
+---
+
+### 9. Detailed Part 2 Summary (Simple Language)
+
+#### A. Old vs. New Structure
+- **`CsvService`**:
+  - *Old*: Monolithic parsing that passed around raw column index numbers (`desc_idx`) and directly indexed into the CSV string array.
+  - *New*: Centralized schema constants (`REQUIRED_COLUMNS`, `OPTIONAL_COLUMNS`, `DEFAULT_EXPORT_HEADERS`) and a safe field extractor `_extract_row_field()` that handles default fallbacks (such as defaulting currency to `'PKR'`).
+- **`AnalyticsService`**:
+  - *Old*: A single 62-line monolithic method (`get_financial_summary`) with CC=10 that mixed validation, financial arithmetic, float rounding, zero-division checks, and 12-month calendar aggregation.
+  - *New*: A 4-stage pipeline where pure math and data formatting are cleanly separated into dedicated helper methods (`_validate_period`, `_compute_summary`, `_build_category_breakdown`, `_build_monthly_trends`), dropping coordinator CC to 2.
+
+#### B. Behavior Preserved vs. Intentional Changes
+- **Preserved**: 100% of public method signatures, JSON return formats, CSV export headers, and import error handling. Proved by 8 unchanged characterization tests and 70 full pytest suite passes.
+- **Changed**: CSV import now accepts an optional `Currency` column; if omitted, it defaults safely to `'PKR'`.
+
+#### C. Real Before/After Metrics (Measured with Radon)
+- `CsvService._process_csv_row`: CC dropped from **6 to 4** (-33.3%).
+- `CsvService.import_transactions_from_csv`: CC stayed at **7** (0%).
+- `CsvService` SLOC: increased from **133 to 144** (+8.2%) due to type hints and constants.
+- `AnalyticsService.get_financial_summary`: CC dropped from **10 to 2** (-80.0%).
+- `AnalyticsService` overall Class CC: dropped from **8 to 4** (-50.0%).
+- `AnalyticsService` SLOC: increased from **89 to 106** (+19.1%) due to method decomposition.
+
+#### D. Challenges, Trade-offs, and Lessons Learned
+- **`CsvService`**:
+  - *Challenge*: Accepting old CSV files without a `Currency` column while allowing new ones with `Currency` without breaking header validation.
+  - *Trade-off*: Writing defensive field extraction logic increased SLOC by 8.2%.
+  - *Lesson Learned*: Data import logic should never rely on hardcoded positional column indices.
+- **`AnalyticsService`**:
+  - *Challenge*: Extracting helper methods without introducing subtle rounding differences in financial totals or division-by-zero errors.
+  - *Trade-off*: Splitting one method into five methods increased SLOC by 19.1%.
+  - *Lesson Learned*: Decomposing monolithic aggregation procedures into pure calculation stages makes unit testing trivial without requiring database setup.
+
+#### E. Five Examiner Questions and Short Answers
+1. **Q: Why is `AnalyticsService` a rewrite rather than a refactor?**
+   - *A*: Because the monolithic 62-line procedure was discarded and replaced with a newly architected 4-stage pipeline where the coordinator has a CC of 2, transforming an untestable script into isolated pure functions.
+2. **Q: Why is `CsvService` considered a mixed rewrite/refactor?**
+   - *A*: While it introduced formal schema constants and safe field extractors (`_extract_row_field`), the overall import control flow remained structurally similar to the original design rather than being decoupled into independent parser classes.
+3. **Q: How did you prove that existing functionality was not broken?**
+   - *A*: We created 8 characterization tests before rewriting, verified they passed on the old code, and then verified the exact same tests passed on the new code without modifying a single line of test code.
+4. **Q: Why did raw lines of code (SLOC) increase after rewriting?**
+   - *A*: The original code used compressed, multi-operation expressions. The rewritten code added explicit type annotations, docstrings, class constants, and method headers to drastically lower cyclomatic complexity.
+5. **Q: How does `CsvService` maintain backward compatibility with Assignment 01 CSV exports?**
+   - *A*: The CSV export header remains unchanged, and the import validator treats `currency` as optional, defaulting missing currency fields to `'PKR'`.
+
+---
+
+## Final Verdict
+
+**REWRITING AUDIT VERIFIED (WITH CAVEATS)**:
+- Code functionality: **PASS** (70/70 tests pass).
+- Behavior compatibility: **PASS** (100% backward compatible).
+- `AnalyticsService`: **GENUINE REWRITE** (monolith decomposed into 4-stage pipeline, CC 10 -> 2).
+- `CsvService`: **MOSTLY REFACTOR / MIXED** (field extraction & constants added, core ingestion flow preserved).
+- Documentation accuracy: **CAVEATS NOTED** (`import_transactions_from_csv` CC remains 7; responsibility counts are qualitative judgments; GUI not run interactively).
