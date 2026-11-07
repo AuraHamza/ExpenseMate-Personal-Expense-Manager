@@ -1,0 +1,19 @@
+﻿============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0
+rootdir: C:\Users\3 BROS COMPUTERZ\Desktop\ExpenseMate-Personal-Expense-Manager
+plugins: cov-7.1.0
+collected 56 items
+
+tests\integration\test_api.py ...........                                [ 19%]
+tests\integration\test_partB_flows.py .....                              [ 28%]
+tests\system\test_end_to_end.py .                                        [ 30%]
+tests\unit\test_alert_service.py ....                                    [ 37%]
+tests\unit\test_analytics_service.py ..                                  [ 41%]
+tests\unit\test_api_client.py .....                                      [ 50%]
+tests\unit\test_architecture_layers.py ........                          [ 64%]
+tests\unit\test_budget_service.py ....                                   [ 71%]
+tests\unit\test_csv_service.py ..                                        [ 75%]
+tests\unit\test_migration.py ....                                        [ 82%]
+tests\unit\test_transaction_service.py ..........                        [100%]
+
+============================= 56 passed in 11.08s =============================

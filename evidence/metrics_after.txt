@@ -1,0 +1,423 @@
+====================================================================
+METRICS AFTER PART B REFACTORING
+====================================================================
+
+--- ARCHITECTURAL & LAYER COUNTS ---
+1. SQL statements executed outside repositories: 0
+   (Preserved: no routes or services invoke sqlite3 or raw SQL)
+
+2. Direct Repository imports inside Controllers (Routes): 0
+   (server/routes/categories.py now imports CategoryService exclusively)
+
+3. Business-logic / Domain-validation lines inside Routes: 0 lines
+   - server/routes/categories.py now delegates creation and uniqueness validation to CategoryService
+   - server/routes/analytics.py now delegates month parameter validation to AnalyticsService
+
+4. Duplicated business threshold calculation blocks: 0
+   (Consolidated into single source of truth in BudgetCalculator)
+
+5. Responsibilities in target classes changed:
+   - BudgetService: 2 responsibilities (parameter validation, CRUD orchestration; progress/status calculation delegated to BudgetCalculator)
+   - AlertService: 2 responsibilities (alert messaging and dispatch; progress/threshold evaluation delegated to BudgetCalculator)
+   - CategoryService: 2 responsibilities (category validation, CRUD orchestration)
+   - CategoryRepository: 1 responsibility (pure data access)
+
+--- CYCLOMATIC COMPLEXITY OF TARGET FUNCTIONS ---
+  server/routes/transactions.py::create_transaction: CC = 4
+  server/services/transaction_service.py::TransactionService.create_transaction: CC = 4
+  server/services/transaction_service.py::create_transaction: CC = 4
+  server/services/transaction_service.py::TransactionService.validate_transaction_data: CC = 7
+  server/services/transaction_service.py::validate_transaction_data: CC = 7
+  server/services/alert_service.py::AlertService.check_category_budget_alert: CC = 7
+  server/services/alert_service.py::check_category_budget_alert: CC = 7
+  server/services/alert_service.py::AlertService.check_transaction_alert: CC = 3
+  server/services/alert_service.py::check_transaction_alert: CC = 3
+  server/services/budget_calculator.py::BudgetCalculator.calculate_progress: CC = 4
+  server/services/budget_calculator.py::calculate_progress: CC = 4
+  server/services/budget_calculator.py::BudgetCalculator.evaluate_alert_level: CC = 3
+  server/services/budget_calculator.py::evaluate_alert_level: CC = 3
+  server/routes/budgets.py::get_budgets: CC = 2
+  server/routes/budgets.py::set_budget: CC = 4
+  server/services/budget_service.py::BudgetService.get_budgets: CC = 2
+  server/services/budget_service.py::get_budgets: CC = 2
+  server/services/budget_service.py::BudgetService._attach_progress: CC = 1
+  server/services/budget_service.py::_attach_progress: CC = 1
+  server/services/budget_service.py::BudgetService.validate_budget_data: CC = 1
+  server/services/budget_service.py::validate_budget_data: CC = 1
+  server/routes/categories.py::create_category: CC = 6
+  server/services/category_service.py::CategoryService.create_category: CC = 2
+  server/services/category_service.py::create_category: CC = 2
+  server/routes/analytics.py::get_analytics: CC = 3
+  server/services/analytics_service.py::AnalyticsService.get_financial_summary: CC = 10
+  server/services/analytics_service.py::get_financial_summary: CC = 10
+server\app.py
+    F 11:0 create_app - A (3)
+server\database.py
+    F 24:0 get_db_connection - A (3)
+    F 121:0 close_db - A (3)
+    F 41:0 init_db - A (2)
+server\repositories\budget_repository.py
+    M 11:4 BudgetRepository.get_all - A (5)
+    C 5:0 BudgetRepository - A (3)
+    M 57:4 BudgetRepository.get_by_id - A (2)
+    M 82:4 BudgetRepository.get_by_category_and_period - A (2)
+    M 144:4 BudgetRepository.upsert - A (2)
+    M 8:4 BudgetRepository.__init__ - A (1)
+    M 112:4 BudgetRepository.create - A (1)
+    M 127:4 BudgetRepository.update - A (1)
+    M 180:4 BudgetRepository.delete - A (1)
+server\repositories\category_repository.py
+    M 50:4 CategoryRepository.create - A (5)
+    C 6:0 CategoryRepository - A (3)
+    M 12:4 CategoryRepository.get_all - A (2)
+    M 23:4 CategoryRepository.get_by_id - A (2)
+    M 36:4 CategoryRepository.get_by_name - A (2)
+    M 9:4 CategoryRepository.__init__ - A (1)
+    M 68:4 CategoryRepository.exists - A (1)
+server\repositories\transaction_repository.py
+    M 11:4 TransactionRepository.get_all - B (6)
+    M 303:4 TransactionRepository.get_monthly_totals_for_year - B (6)
+    C 5:0 TransactionRepository - A (4)
+    M 224:4 TransactionRepository.get_totals_by_type_and_month - A (4)
+    M 262:4 TransactionRepository.get_category_spending_breakdown - A (4)
+    M 67:4 TransactionRepository.get_by_id - A (2)
+    M 94:4 TransactionRepository.create - A (2)
+    M 128:4 TransactionRepository.update - A (2)
+    M 199:4 TransactionRepository.get_spending_by_category_and_month - A (2)
+    M 8:4 TransactionRepository.__init__ - A (1)
+    M 188:4 TransactionRepository.delete - A (1)
+server\routes\analytics.py
+    F 22:0 get_analytics - A (3)
+    F 16:0 _get_analytics_service - A (1)
+server\routes\budgets.py
+    F 78:0 update_budget - B (6)
+    F 53:0 set_budget - A (4)
+    F 40:0 get_budget - A (3)
+    F 101:0 delete_budget - A (3)
+    F 25:0 get_budgets - A (2)
+    F 19:0 _get_budget_service - A (1)
+server\routes\categories.py
+    F 33:0 create_category - B (6)
+    F 22:0 get_all_categories - A (2)
+    F 16:0 _get_category_service - A (1)
+server\routes\csv_io.py
+    F 44:0 import_csv - B (6)
+    F 32:0 _extract_csv_text_from_request - A (5)
+    F 22:0 _extract_csv_from_upload - A (3)
+    F 66:0 export_csv - A (2)
+    F 17:0 _get_csv_service - A (1)
+server\routes\transactions.py
+    F 99:0 update_transaction - A (5)
+    F 61:0 create_transaction - A (4)
+    F 25:0 get_transactions - A (3)
+    F 48:0 get_transaction - A (3)
+    F 139:0 delete_transaction - A (3)
+    F 19:0 _get_transaction_service - A (1)
+server\services\alert_service.py
+    M 31:4 AlertService.check_category_budget_alert - B (7)
+    C 17:0 AlertService - A (5)
+    M 20:4 AlertService.__init__ - A (4)
+    M 84:4 AlertService.check_transaction_alert - A (3)
+    M 106:4 AlertService.get_all_active_alerts - A (3)
+server\services\analytics_service.py
+    M 28:4 AnalyticsService.get_financial_summary - B (10)
+    C 16:0 AnalyticsService - B (8)
+    M 19:4 AnalyticsService.__init__ - A (3)
+server\services\budget_calculator.py
+    C 10:0 BudgetCalculator - A (5)
+    M 17:4 BudgetCalculator.calculate_progress - A (4)
+    M 38:4 BudgetCalculator.evaluate_alert_level - A (3)
+server\services\budget_service.py
+    M 19:4 BudgetService.__init__ - A (4)
+    M 39:4 BudgetService._validate_month - A (4)
+    M 48:4 BudgetService._validate_year - A (4)
+    M 100:4 BudgetService.update_budget - A (4)
+    C 16:0 BudgetService - A (3)
+    M 30:4 BudgetService._validate_category_id - A (3)
+    M 57:4 BudgetService._validate_amount - A (3)
+    M 117:4 BudgetService.get_budgets - A (2)
+    M 131:4 BudgetService.get_budget_by_id - A (2)
+    M 138:4 BudgetService.delete_budget - A (2)
+    M 66:4 BudgetService.validate_budget_data - A (1)
+    M 81:4 BudgetService.set_budget - A (1)
+    M 145:4 BudgetService._attach_progress - A (1)
+server\services\category_service.py
+    M 29:4 CategoryService.validate_category_name - A (4)
+    C 11:0 CategoryService - A (3)
+    M 14:4 CategoryService.__init__ - A (2)
+    M 42:4 CategoryService.create_category - A (2)
+    M 21:4 CategoryService.get_all_categories - A (1)
+    M 25:4 CategoryService.get_category_by_id - A (1)
+server\services\csv_service.py
+    M 94:4 CsvService.import_transactions_from_csv - B (7)
+    M 66:4 CsvService._process_csv_row - B (6)
+    C 18:0 CsvService - A (5)
+    M 36:4 CsvService._parse_and_validate_header - A (5)
+    M 21:4 CsvService.__init__ - A (4)
+    M 56:4 CsvService._resolve_category_id - A (3)
+    M 138:4 CsvService.export_transactions_to_csv - A (2)
+server\services\transaction_service.py
+    M 36:4 TransactionService.validate_transaction_data - B (7)
+    M 128:4 TransactionService.update_transaction - B (6)
+    M 192:4 TransactionService.get_transactions - B (6)
+    C 16:0 TransactionService - A (5)
+    M 21:4 TransactionService.__init__ - A (4)
+    M 88:4 TransactionService.create_transaction - A (4)
+    M 76:4 TransactionService._validate_date - A (3)
+    M 178:4 TransactionService.delete_transaction - A (2)
+    M 185:4 TransactionService.get_transaction - A (2)
+
+99 blocks (classes, functions, methods) analyzed.
+Average complexity: A (3.2323232323232323)
+server\app.py
+    LOC: 83
+    LLOC: 41
+    SLOC: 64
+    Comments: 6
+    Single comments: 6
+    Multi: 0
+    Blank: 13
+    - Comment Stats
+        (C % L): 7%
+        (C % S): 9%
+        (C + M % L): 7%
+server\database.py
+    LOC: 135
+    LLOC: 46
+    SLOC: 104
+    Comments: 3
+    Single comments: 4
+    Multi: 8
+    Blank: 19
+    - Comment Stats
+        (C % L): 2%
+        (C % S): 3%
+        (C + M % L): 8%
+server\__init__.py
+    LOC: 5
+    LLOC: 1
+    SLOC: 0
+    Comments: 0
+    Single comments: 0
+    Multi: 5
+    Blank: 0
+    - Comment Stats
+        (C % L): 0%
+        (C % S): 0%
+        (C + M % L): 100%
+server\repositories\budget_repository.py
+    LOC: 189
+    LLOC: 95
+    SLOC: 161
+    Comments: 1
+    Single comments: 8
+    Multi: 4
+    Blank: 16
+    - Comment Stats
+        (C % L): 1%
+        (C % S): 1%
+        (C + M % L): 3%
+server\repositories\category_repository.py
+    LOC: 76
+    LLOC: 63
+    SLOC: 62
+    Comments: 0
+    Single comments: 6
+    Multi: 0
+    Blank: 8
+    - Comment Stats
+        (C % L): 0%
+        (C % S): 0%
+        (C + M % L): 0%
+server\repositories\transaction_repository.py
+    LOC: 352
+    LLOC: 163
+    SLOC: 295
+    Comments: 1
+    Single comments: 6
+    Multi: 19
+    Blank: 32
+    - Comment Stats
+        (C % L): 0%
+        (C % S): 0%
+        (C + M % L): 6%
+server\repositories\__init__.py
+    LOC: 5
+    LLOC: 4
+    SLOC: 4
+    Comments: 0
+    Single comments: 0
+    Multi: 0
+    Blank: 1
+    - Comment Stats
+        (C % L): 0%
+        (C % S): 0%
+        (C + M % L): 0%
+server\routes\analytics.py
+    LOC: 38
+    LLOC: 26
+    SLOC: 23
+    Comments: 0
+    Single comments: 1
+    Multi: 6
+    Blank: 8
+    - Comment Stats
+        (C % L): 0%
+        (C % S): 0%
+        (C + M % L): 16%
+server\routes\budgets.py
+    LOC: 115
+    LLOC: 86
+    SLOC: 82
+    Comments: 0
+    Single comments: 5
+    Multi: 10
+    Blank: 18
+    - Comment Stats
+        (C % L): 0%
+        (C % S): 0%
+        (C + M % L): 9%
+server\routes\categories.py
+    LOC: 53
+    LLOC: 38
+    SLOC: 34
+    Comments: 0
+    Single comments: 2
+    Multi: 7
+    Blank: 10
+    - Comment Stats
+        (C % L): 0%
+        (C % S): 0%
+        (C + M % L): 13%
+server\routes\csv_io.py
+    LOC: 91
+    LLOC: 61
+    SLOC: 61
+    Comments: 0
+    Single comments: 3
+    Multi: 11
+    Blank: 16
+    - Comment Stats
+        (C % L): 0%
+        (C % S): 0%
+        (C + M % L): 12%
+server\routes\transactions.py
+    LOC: 156
+    LLOC: 90
+    SLOC: 123
+    Comments: 0
+    Single comments: 5
+    Multi: 10
+    Blank: 18
+    - Comment Stats
+        (C % L): 0%
+        (C % S): 0%
+        (C + M % L): 6%
+server\routes\__init__.py
+    LOC: 25
+    LLOC: 7
+    SLOC: 12
+    Comments: 0
+    Single comments: 0
+    Multi: 10
+    Blank: 3
+    - Comment Stats
+        (C % L): 0%
+        (C % S): 0%
+        (C + M % L): 40%
+server\services\alert_service.py
+    LOC: 116
+    LLOC: 55
+    SLOC: 82
+    Comments: 0
+    Single comments: 1
+    Multi: 19
+    Blank: 14
+    - Comment Stats
+        (C % L): 0%
+        (C % S): 0%
+        (C + M % L): 16%
+server\services\analytics_service.py
+    LOC: 112
+    LLOC: 41
+    SLOC: 89
+    Comments: 0
+    Single comments: 1
+    Multi: 12
+    Blank: 10
+    - Comment Stats
+        (C % L): 0%
+        (C % S): 0%
+        (C + M % L): 11%
+server\services\budget_calculator.py
+    LOC: 48
+    LLOC: 29
+    SLOC: 25
+    Comments: 0
+    Single comments: 1
+    Multi: 14
+    Blank: 8
+    - Comment Stats
+        (C % L): 0%
+        (C % S): 0%
+        (C + M % L): 29%
+server\services\budget_service.py
+    LOC: 168
+    LLOC: 95
+    SLOC: 130
+    Comments: 0
+    Single comments: 6
+    Multi: 13
+    Blank: 19
+    - Comment Stats
+        (C % L): 0%
+        (C % S): 0%
+        (C + M % L): 8%
+server\services\category_service.py
+    LOC: 49
+    LLOC: 32
+    SLOC: 30
+    Comments: 0
+    Single comments: 5
+    Multi: 5
+    Blank: 9
+    - Comment Stats
+        (C % L): 0%
+        (C % S): 0%
+        (C + M % L): 10%
+server\services\csv_service.py
+    LOC: 176
+    LLOC: 87
+    SLOC: 133
+    Comments: 1
+    Single comments: 5
+    Multi: 16
+    Blank: 22
+    - Comment Stats
+        (C % L): 1%
+        (C % S): 1%
+        (C + M % L): 10%
+server\services\transaction_service.py
+    LOC: 215
+    LLOC: 89
+    SLOC: 163
+    Comments: 0
+    Single comments: 5
+    Multi: 18
+    Blank: 29
+    - Comment Stats
+        (C % L): 0%
+        (C % S): 0%
+        (C + M % L): 8%
+server\services\__init__.py
+    LOC: 25
+    LLOC: 9
+    SLOC: 16
+    Comments: 0
+    Single comments: 0
+    Multi: 6
+    Blank: 3
+    - Comment Stats
+        (C % L): 0%
+        (C % S): 0%
+        (C + M % L): 24%

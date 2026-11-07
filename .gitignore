@@ -13,5 +13,6 @@ env/
 .coverage
 htmlcov/
 
-# Local databases (keep directory, ignore actual local db file if desired, or keep tracked)
-# data/expensemate.db
+# Local databases and backups
+*.backup_*
+*.db.backup_*
