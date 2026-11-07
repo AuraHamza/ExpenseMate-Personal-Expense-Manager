@@ -68,14 +68,18 @@ An end-to-end regression of every Assignment 01 capability was executed via HTTP
 
 ---
 
-## 4. Test Counts by Evolution Phase
+## 4. Test Counts by Evolution Phase (Recomputed from Live Git Worktrees)
 
-| Phase | Description | Added Tests | Cumulative Total |
-|---|---|:---:|:---:|
-| **Baseline (Assignment 01)** | Initial test suite | 37 | 37 |
-| **Part A (Migration)** | Schema v2 migration tests (`test_migration.py`) | +4 | 41 |
-| **Part B (Refactoring)** | Layer architecture tests (`test_architecture_layers.py` + `test_partB_flows.py`) | +13 | 54 |
-| **Part C (Rewriting)** | Characterization tests (`test_partC_characterization.py`) + rewrite tests (`test_partC_rewrites.py` + `test_csv_exporter.py`) | +26 | **80** |
+Every phase count below was verified by checking out the phase's milestone commit in an isolated temporary git worktree and running `pytest --collect-only -q` and the full test suite. These match the evidence files on record.
+
+| Phase Milestone | Milestone Git Commit | What Was Added | Tests Added | Cumulative Total | Real Evidence Reference |
+|---|:---:|---|:---:|:---:|---|
+| **Baseline (Assignment 01)** | `2bc671c` (`v1-assignment01`) | Initial Assignment 01 test suite | 39 | **39** | Verified in worktree (`39 tests collected in 1.15s`) |
+| **Part A: Migration** | `bb6b524` / `8e44624` | `tests/unit/test_migration.py` (4 tests) | +4 | **43** | [`evidence/pytest_results.txt`](../evidence/pytest_results.txt) (`43 passed in 10.84s`) |
+| **Part B: Refactoring** | `872e0ae` | `tests/unit/test_architecture_layers.py` (8 tests)<br>`tests/integration/test_partB_flows.py` (5 tests) | +13 | **56** | [`evidence/pytest_partB.txt`](../evidence/pytest_partB.txt) (`56 passed in 11.08s`) |
+| **Part C: Initial Rewrites** | `2f93c55` | `tests/unit/test_partC_characterization.py` (8 tests)<br>`tests/unit/test_partC_rewrites.py` (initial 6 tests) | +14 | **70** | [`evidence/partC_pytest.txt`](../evidence/partC_pytest.txt) (`70 passed in 9.30s`) |
+| **Part C: Modular CsvService** | `911069f` | Component unit tests in `test_partC_rewrites.py` (expanded from 6 to 12 tests) | +6 | **76** | Verified in pytest run (`76 passed in 4.91s`) |
+| **Part C: Isolated Exporter** | `3613aa5` (HEAD) | `tests/unit/test_csv_exporter.py` (4 tests) | +4 | **80** | [`evidence/final_regression.txt`](../evidence/final_regression.txt) (`80 passed in 11.64s`) |
 
 ---
 
