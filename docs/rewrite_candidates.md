@@ -8,7 +8,7 @@ This review evaluates modules across the ExpenseMate codebase to identify classe
 
 ### Candidate 1: `server/services/csv_service.py` (`CsvService`)
 - **Primary Responsibility (Intended)**: Orchestrating CSV import and export.
-- **Current Responsibilities (Actual)**: 5 distinct responsibilities:
+- **Current Responsibilities (Actual)**: 5 distinct responsibilities (architectural design judgment):
   1. Low-level CSV RFC 4180 parsing and header validation (`_parse_and_validate_header`).
   2. In-line column index resolution and mapping (`col_map`).
   3. Category existence checking and on-the-fly category creation (`_resolve_category_id`).
@@ -20,13 +20,13 @@ This review evaluates modules across the ExpenseMate codebase to identify classe
   - **Hardcoded Column Headers**: Hardcodes `["ID", "Type", "Amount", "Date", "Category", "Description", "Created At"]` and missing the `Currency` column introduced in Schema v2!
   - **Hard to Unit Test**: Importing a CSV requires mock repositories for Category, Transaction, and Service layers simultaneously because `_process_csv_row` performs multiple side-effects per row.
 - **Why a Full Rewrite is Justified**:
-  A small refactor cannot cleanly separate stream parsing, validation, row-entity conversion, and batch transaction orchestration without breaking internal method signatures. Replacing `CsvService` with a modular architecture using dedicated parser/serializer components completely decouples CSV text handling from database/service side-effects.
+  A small refactor that merely extracts private helper methods leaves the monolithic class structure intact, keeps class cyclomatic complexity high, and prevents unit testing parsing and serialization in isolation. A full rewrite replacing `CsvService` with a modular architecture (`CsvHeaderParser`, `CsvRowMapper`, `CsvExporter`, and a thin facade `CsvService`) cleanly separates responsibilities, cuts method complexity dramatically, and allows header parsing and CSV exporting to be unit-tested without databases.
 
 ---
 
 ### Candidate 2: `server/services/analytics_service.py` (`AnalyticsService`)
 - **Primary Responsibility (Intended)**: Computing financial metrics and aggregations for reporting.
-- **Current Responsibilities (Actual)**: 4 distinct responsibilities:
+- **Current Responsibilities (Actual)**: 4 distinct responsibilities (architectural design judgment):
   1. Parameter validation (month range constraints).
   2. Financial summary aggregation (income, expense, net savings, savings rate).
   3. Spending breakdown formatting and label/value distribution for charts.
@@ -61,4 +61,4 @@ This review evaluates modules across the ExpenseMate codebase to identify classe
 1. **`server/services/csv_service.py` (`CsvService`)**
 2. **`server/services/analytics_service.py` (`AnalyticsService`)
 
-Both classes contain clear design deficiencies (multiple responsibilities, high cyclomatic complexity up to CC=10, hardcoded assumptions, and monolithic procedural methods) where a clean reimplementation offers superior architectural value over patch refactoring.
+Both modules contain clear design deficiencies (multiple responsibilities, high cyclomatic complexity up to CC=10, hardcoded assumptions, and monolithic procedural methods) where clean reimplementations offer superior architectural value over patch refactoring.

@@ -1,9 +1,9 @@
 # Class Rewrites Architecture Diagrams (Part C)
 
-## 1. `CsvService` Rewrite Comparison
+## 1. `CsvService` Modular Decomposition & Rewrite
 
 ### Before Rewrite
-The old `CsvService` handled low-level index resolution, raw array indexing, and side-effectful category creation in one coupled procedure.
+The old `CsvService` handled low-level index resolution, raw array indexing, side-effectful category creation, and CSV export in a single coupled class.
 
 ```mermaid
 classDiagram
@@ -14,26 +14,46 @@ classDiagram
         -_resolve_category_id(cat_name: str)
         -_process_csv_row(row, col_map, desc_idx)
     }
-    note for OldCsvService "Problems:\n- Hardcoded header literals\n- High complexity (CC=7, CC=6)\n- Direct array slicing & index coupling\n- Cannot parse individual fields in isolation"
+    note for OldCsvService "Problems:\n- Hardcoded header literals\n- High complexity (CC=7, CC=6)\n- Direct array slicing & index coupling\n- All CSV logic packed into 1 class"
 ```
 
-### After Rewrite
-The rewritten `CsvService` encapsulates schema constants and delegates cell value extraction to `_extract_row_field`, isolating validation and entity mapping.
+### After Rewrite (Decomposed Architecture)
+The rewritten architecture separates concerns into 4 focused classes: `CsvHeaderParser`, `CsvRowMapper`, `CsvExporter`, and a thin facade `CsvService` that coordinates them.
 
 ```mermaid
 classDiagram
-    class RewrittenCsvService {
+    class CsvHeaderParser {
         +REQUIRED_COLUMNS: Set[str]
         +OPTIONAL_COLUMNS: Set[str]
-        +DEFAULT_EXPORT_HEADERS: List[str]
-        +import_transactions_from_csv(csv_content: str)
-        +export_transactions_to_csv()
-        -_parse_and_validate_header(reader) Dict
-        -_resolve_category_id(cat_name: str) int
-        -_extract_row_field(row, col_map, col_name, default) str
-        -_process_csv_row(row, col_map) Tuple
+        +parse_header(raw_header: List[str]) Dict
     }
-    note for RewrittenCsvService "Improvements:\n- Explicit schema constants\n- Complexity reduced (_process_csv_row CC=4)\n- Isolated cell extraction\n- Supports Currency column"
+
+    class CsvRowMapper {
+        -category_repo: CategoryRepository
+        -transaction_service: TransactionService
+        +extract_field(row, col_map, col_name, default) str
+        +resolve_category_id(cat_name: str) int
+        +map_and_ingest_row(row, col_map) Tuple
+    }
+
+    class CsvExporter {
+        +DEFAULT_EXPORT_HEADERS: List[str]
+        -transaction_repo: TransactionRepository
+        +export(start_date, end_date, category_id, trans_type) str
+    }
+
+    class CsvService {
+        -header_parser: CsvHeaderParser
+        -row_mapper: CsvRowMapper
+        -exporter: CsvExporter
+        +import_transactions_from_csv(csv_content: str) Dict
+        +export_transactions_to_csv() str
+        -_ingest_stream(reader, col_map) Tuple
+    }
+
+    CsvService --> CsvHeaderParser : delegates header validation
+    CsvService --> CsvRowMapper : delegates row mapping & ingestion
+    CsvService --> CsvExporter : delegates CSV export
 ```
 
 ---

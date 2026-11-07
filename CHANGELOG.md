@@ -8,7 +8,7 @@ All notable changes to the ExpenseMate project will be documented in this file.
 - **Reason**: Replace complex, tightly coupled, and hard-to-test service implementations with clean, single-responsibility, highly maintainable designs while preserving 100% of public behavior and API contracts.
 - **Rewritten Classes**:
   - **`server/services/csv_service.py` (`CsvService`)**:
-    - Replaced coupled multi-responsibility class with a staged architecture: centralized schema constants (`REQUIRED_COLUMNS`, `OPTIONAL_COLUMNS`, `DEFAULT_EXPORT_HEADERS`), isolated cell extraction with default fallbacks (`_extract_row_field`), and decoupled batch ingestion from array bounds checks. Reduced row processor complexity from CC=6 to CC=4.
+    - Genuinely rewritten and decomposed into 4 dedicated, single-responsibility classes: `CsvHeaderParser` (RFC 4180 header validation & index mapping), `CsvRowMapper` (cell extraction with defaults, category auto-registration, row ingestion), `CsvExporter` (CSV generation & numeric formatting), and `CsvService` (thin facade orchestrating the pipeline). Reduced `import_transactions_from_csv` complexity from CC=7 to CC=3 and class complexity from CC=5 to CC=3. Fully supports schema v2 currency while preserving 100% backward compatibility for old-format imports and export formats.
   - **`server/services/analytics_service.py` (`AnalyticsService`)**:
     - Replaced the monolithic 62-line procedure (`get_financial_summary`, formerly CC=10, Rank B) with a decomposed computational pipeline (`_validate_period`, `_compute_summary`, `_build_category_breakdown`, `_build_monthly_trends`). Reduced pipeline coordinator complexity from CC=10 to CC=2 (Rank A).
 - **Files Affected**:

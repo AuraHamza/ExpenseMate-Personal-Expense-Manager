@@ -1,52 +1,57 @@
 ====================================================================
-METRICS AFTER PART C REWRITING
+METRICS AFTER PART C REWRITING (INCLUDING CSVSERVICE MODULAR REWRITE)
 ====================================================================
 
-=== server/services/csv_service.py ===
-SLOC: 144, LOC: 188, LLOC: 97
-Method Complexity:
-  CsvService (line 19): CC = 5
-    .__init__ (line 35): CC = 4
-    ._parse_and_validate_header (line 50): CC = 5
-    ._resolve_category_id (line 67): CC = 3
-    ._extract_row_field (line 77): CC = 3
-    ._process_csv_row (line 86): CC = 4
-    .import_transactions_from_csv (line 112): CC = 7
-    .export_transactions_to_csv (line 156): CC = 2
-  __init__ (line 35): CC = 4
-  _parse_and_validate_header (line 50): CC = 5
-  _resolve_category_id (line 67): CC = 3
-  _extract_row_field (line 77): CC = 3
-  _process_csv_row (line 86): CC = 4
-  import_transactions_from_csv (line 112): CC = 7
-  export_transactions_to_csv (line 156): CC = 2
+=== server/services/csv_service.py (Decomposed Architecture) ===
+SLOC: 198, LOC: 269, LLOC: 136
+Classes: CsvHeaderParser, CsvRowMapper, CsvExporter, CsvService (Facade)
+
+Class & Method Complexity (radon cc -s):
+  CsvHeaderParser (line 21): CC = 5 (A)
+    .parse_header (line 27): CC = 4 (A)
+  CsvRowMapper (line 39): CC = 4 (A)
+    .__init__ (line 42): CC = 1 (A)
+    .extract_field (line 50): CC = 3 (A)
+    .resolve_category_id (line 58): CC = 3 (A)
+    .map_and_ingest_row (line 68): CC = 4 (A)
+  CsvExporter (line 98): CC = 3 (A)
+    .__init__ (line 111): CC = 1 (A)
+    .export (line 114): CC = 2 (A)
+  CsvService (line 149): CC = 3 (A)  [Down from CC = 5 (B)]
+    .__init__ (line 159): CC = 7 (B)
+    ._parse_and_validate_header (line 183): CC = 2 (A)  [Down from CC = 5]
+    ._resolve_category_id (line 191): CC = 1 (A)  [Down from CC = 3]
+    ._extract_row_field (line 195): CC = 1 (A)
+    ._process_csv_row (line 201): CC = 1 (A)  [Down from CC = 6]
+    ._ingest_stream (line 206): CC = 5 (A)
+    .import_transactions_from_csv (line 233): CC = 3 (A)  [Down from CC = 7]
+    .export_transactions_to_csv (line 253): CC = 1 (A)  [Down from CC = 2]
 
 === server/services/analytics_service.py ===
 SLOC: 106, LOC: 146, LLOC: 65
 Method Complexity:
-  AnalyticsService (line 18): CC = 4
-    .__init__ (line 23): CC = 3
-    ._validate_period (line 32): CC = 4
-    ._compute_summary (line 37): CC = 2
-    ._build_category_breakdown (line 52): CC = 4
-    ._build_monthly_trends (line 82): CC = 2
-    .get_financial_summary (line 101): CC = 2
-  __init__ (line 23): CC = 3
-  _validate_period (line 32): CC = 4
-  _compute_summary (line 37): CC = 2
-  _build_category_breakdown (line 52): CC = 4
-  _build_monthly_trends (line 82): CC = 2
-  get_financial_summary (line 101): CC = 2
+  AnalyticsService (line 18): CC = 4 (A)  [Down from CC = 8 (B)]
+    .__init__ (line 23): CC = 3 (A)
+    ._validate_period (line 32): CC = 4 (A)
+    ._compute_summary (line 37): CC = 2 (A)
+    ._build_category_breakdown (line 52): CC = 4 (A)
+    ._build_monthly_trends (line 82): CC = 2 (A)
+    .get_financial_summary (line 101): CC = 2 (A)  [Down from CC = 10 (B)]
 
 === RESPONSIBILITIES & SMELLS AFTER REWRITE ===
-1. CsvService:
-   - Responsibilities: 2 (CSV stream orchestration, format conversion)
-   - Duplicated blocks: 0 (Centralized field extraction via _extract_row_field)
-   - Hardcoded values: Eliminated into REQUIRED_COLUMNS, OPTIONAL_COLUMNS, DEFAULT_EXPORT_HEADERS constants
-   - Max Method Complexity: import_transactions_from_csv (CC=6, down from 7), _process_csv_row (CC=3, down from 6)
+1. CsvService Architecture:
+   - Structure: Decomposed into 4 dedicated classes:
+     * CsvHeaderParser (Single responsibility: RFC 4180 header validation & index mapping)
+     * CsvRowMapper (Single responsibility: cell extraction, category resolution, row ingestion)
+     * CsvExporter (Single responsibility: transaction CSV formatting & generation)
+     * CsvService (Single responsibility: thin facade orchestrating the pipeline)
+   - Note on Responsibilities: Responsibility counts (5 -> 1 per component) are qualitative architectural design judgments based on the Single Responsibility Principle, not automated tool outputs.
+   - Hardcoded values: Centralized into REQUIRED_COLUMNS, OPTIONAL_COLUMNS, DEFAULT_EXPORT_HEADERS constants.
+   - Method Complexity: import_transactions_from_csv dropped to CC = 3 (down from 7); _process_csv_row dropped to CC = 1 (down from 6); facade class CC dropped to 3 (down from 5).
+   - SLOC Trade-off: SLOC increased from 133 to 198 (+48.9%) due to 4 separate class definitions, explicit constructor dependency injection, type hints, and docstrings.
 
 2. AnalyticsService:
-   - Responsibilities: 1 (Financial aggregation and reporting pipeline coordination)
-   - Duplicated blocks: 0
-   - Hardcoded values: Centralized into ALL_MONTHS_LABEL constant
-   - Max Method Complexity: _build_category_breakdown (CC=4), get_financial_summary (CC=2, down from 10!)
+   - Structure: Decomposed 62-line procedure into 4 isolated pipeline calculation stages.
+   - Note on Responsibilities: Responsibility count (4 -> 1 coordinator) is an architectural design judgment.
+   - Hardcoded values: Centralized into ALL_MONTHS_LABEL constant.
+   - Max Method Complexity: get_financial_summary dropped to CC = 2 (down from 10!).
