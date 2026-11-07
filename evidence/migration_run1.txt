@@ -1,0 +1,5 @@
+﻿Backup created at: evidence/test_expensemate_copy.db.backup_20261107_170925
+BEFORE: row_count=5, sum_amount=120000.00, version=1
+Migration transaction committed successfully.
+AFTER:  row_count=5, sum_amount=120000.00, version=2, null_currencies=0
+VERIFICATION: PASSED
