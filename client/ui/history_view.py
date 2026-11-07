@@ -273,7 +273,7 @@ class HistoryView(ttk.Frame):
             "Confirm Delete",
             (
                 f"Are you sure you want to delete transaction #{t['id']} "
-                f"(${float(t['amount']):.2f} - {t['category_name']})?"
+                f"({t.get('currency', 'PKR')} {float(t['amount']):.2f} - {t['category_name']})?"
             ),
             icon="warning",
         )

@@ -40,7 +40,7 @@ class TransactionForm(ttk.LabelFrame):
             type_frame, text="Income", value="income", variable=self.type_var
         ).pack(side="left")
 
-        ttk.Label(self, text="Amount ($):").grid(row=1, column=0, sticky="w", pady=6)
+        ttk.Label(self, text="Amount (PKR):").grid(row=1, column=0, sticky="w", pady=6)
         self.amount_var = tk.StringVar()
         self.amount_entry = ttk.Entry(self, textvariable=self.amount_var, width=30)
         self.amount_entry.grid(row=1, column=1, sticky="ew", pady=6)
@@ -240,7 +240,7 @@ class TransactionEditDialog(tk.Toplevel):
             type_f, text="Income", value="income", variable=self.type_var
         ).pack(side="left")
 
-        ttk.Label(frame, text="Amount ($):").grid(row=1, column=0, sticky="w", pady=6)
+        ttk.Label(frame, text="Amount (PKR):").grid(row=1, column=0, sticky="w", pady=6)
         self.amount_var = tk.StringVar()
         ttk.Entry(frame, textvariable=self.amount_var).grid(
             row=1, column=1, sticky="ew", pady=6

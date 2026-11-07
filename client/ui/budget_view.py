@@ -71,7 +71,7 @@ class BudgetView(ttk.Frame):
         )
         self.year_spin.grid(row=0, column=5, padx=5, pady=4)
 
-        ttk.Label(form_frame, text="Budget ($):").grid(
+        ttk.Label(form_frame, text="Budget (PKR):").grid(
             row=0, column=6, padx=5, pady=4, sticky="w"
         )
         self.amount_var = tk.StringVar()
@@ -132,9 +132,9 @@ class BudgetView(ttk.Frame):
 
         self.tree.heading("category", text="Category")
         self.tree.heading("period", text="Period")
-        self.tree.heading("budget", text="Budget ($)")
-        self.tree.heading("spent", text="Spent ($)")
-        self.tree.heading("remaining", text="Remaining ($)")
+        self.tree.heading("budget", text="Budget (PKR)")
+        self.tree.heading("spent", text="Spent (PKR)")
+        self.tree.heading("remaining", text="Remaining (PKR)")
         self.tree.heading("percentage", text="Used (%)")
         self.tree.heading("status", text="Alert Status")
 
@@ -239,9 +239,9 @@ class BudgetView(ttk.Frame):
                 values=(
                     b.get("category_name", ""),
                     period_str,
-                    f"${budget_amt:,.2f}",
-                    f"${spent_amt:,.2f}",
-                    f"${remaining_amt:,.2f}",
+                    f"PKR {budget_amt:,.2f}",
+                    f"PKR {spent_amt:,.2f}",
+                    f"PKR {remaining_amt:,.2f}",
                     f"{pct:.1f}%",
                     status_display,
                 ),
@@ -290,19 +290,19 @@ class BudgetView(ttk.Frame):
             if pct >= 100.0:
                 msg = (
                     f"Budget saved! Notice: Spending in {cat_name} is already at "
-                    f"{pct:.1f}% (${budget['spent']:.2f}/${amount:.2f})."
+                    f"{pct:.1f}% (PKR {budget['spent']:.2f}/PKR {amount:.2f})."
                 )
                 messagebox.showerror("Budget Alert!", msg)
             elif pct >= 80.0:
                 msg = (
                     f"Budget saved! Warning: Spending in {cat_name} is already at "
-                    f"{pct:.1f}% (${budget['spent']:.2f}/${amount:.2f})."
+                    f"{pct:.1f}% (PKR {budget['spent']:.2f}/PKR {amount:.2f})."
                 )
                 messagebox.showwarning("Budget Warning", msg)
             else:
                 msg = (
                     f"Budget for {cat_name} ({calendar.month_abbr[month]} {year}) "
-                    f"set to ${amount:,.2f}."
+                    f"set to PKR {amount:,.2f}."
                 )
                 messagebox.showinfo("Success", msg)
 

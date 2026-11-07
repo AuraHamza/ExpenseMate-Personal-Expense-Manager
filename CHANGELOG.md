@@ -2,6 +2,17 @@
 
 All notable changes to the ExpenseMate project will be documented in this file.
 
+## [v2.2.1 - UI Currency Display Fix] - 2026-11-07
+
+### Client UI Currency Display Alignment
+- **Reason**: Fix currency display in desktop UI views to show PKR labels instead of dollar symbols ("$") to align with Schema v2 default currency ('PKR').
+- **Changes**:
+  - `client/ui/transaction_form.py`: Replaced "Amount ($):" with "Amount (PKR):" on main form and edit dialog.
+  - `client/ui/budget_view.py`: Replaced "Budget ($):" with "Budget (PKR):", treeview headings to "Budget (PKR)", "Spent (PKR)", "Remaining (PKR)", formatted amounts with "PKR", and updated prompt messages.
+  - `client/ui/charts_view.py`: Updated initial KPI cards and live values to "PKR" prefix, chart titles and x-axis labels to "(PKR)", and bar text labels to "PKR".
+  - `client/ui/history_view.py`: Updated delete confirmation message to include transaction currency code.
+- **Impact**: Display-only change; zero changes to API contracts, database, or stored values.
+
 ## [v2.2 - Part C Rewriting Selected Classes] - 2026-11-07
 
 ### Complete Class Rewrites (`CsvService` & `AnalyticsService`)

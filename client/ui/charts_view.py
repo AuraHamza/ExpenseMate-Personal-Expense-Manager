@@ -80,13 +80,13 @@ class ChartsView(ttk.Frame):
         self.kpi_frame.pack(fill="x", padx=5, pady=(0, 10))
 
         self.income_lbl = self._create_kpi_card(
-            self.kpi_frame, "Total Income", "$0.00", "#2e7d32", 0
+            self.kpi_frame, "Total Income", "PKR 0.00", "#2e7d32", 0
         )
         self.expense_lbl = self._create_kpi_card(
-            self.kpi_frame, "Total Expenses", "$0.00", "#c62828", 1
+            self.kpi_frame, "Total Expenses", "PKR 0.00", "#c62828", 1
         )
         self.net_lbl = self._create_kpi_card(
-            self.kpi_frame, "Net Savings", "$0.00", "#1565c0", 2
+            self.kpi_frame, "Net Savings", "PKR 0.00", "#1565c0", 2
         )
         self.savings_lbl = self._create_kpi_card(
             self.kpi_frame, "Savings Rate", "0.0%", "#6a1b9a", 3
@@ -165,10 +165,10 @@ class ChartsView(ttk.Frame):
         net = summary.get("net_savings", 0.0)
         rate = summary.get("savings_rate", 0.0)
 
-        self.income_lbl.config(text=f"${inc:,.2f}")
-        self.expense_lbl.config(text=f"${exp:,.2f}")
+        self.income_lbl.config(text=f"PKR {inc:,.2f}")
+        self.expense_lbl.config(text=f"PKR {exp:,.2f}")
         self.net_lbl.config(
-            text=f"${net:,.2f}", foreground="#2e7d32" if net >= 0 else "#c62828"
+            text=f"PKR {net:,.2f}", foreground="#2e7d32" if net >= 0 else "#c62828"
         )
         self.savings_lbl.config(text=f"{rate:.1f}%")
 
@@ -228,8 +228,8 @@ class ChartsView(ttk.Frame):
             bars = ax2.barh(
                 cat_names, cat_amounts, color="#1976d2", edgecolor="#0d47a1", height=0.6
             )
-            ax2.set_title("Category Totals ($)", fontsize=11, fontweight="bold", pad=10)
-            ax2.set_xlabel("Amount ($)", fontsize=9)
+            ax2.set_title("Category Totals (PKR)", fontsize=11, fontweight="bold", pad=10)
+            ax2.set_xlabel("Amount (PKR)", fontsize=9)
             ax2.tick_params(axis="both", which="major", labelsize=8)
 
             # Add value labels to bars
@@ -238,7 +238,7 @@ class ChartsView(ttk.Frame):
                 ax2.text(
                     width + (max(cat_amounts) * 0.02),
                     bar.get_y() + bar.get_height() / 2,
-                    f"${width:,.0f}",
+                    f"PKR {width:,.0f}",
                     va="center",
                     ha="left",
                     fontsize=8,
