@@ -1,0 +1,42 @@
+====================================================================
+BASELINE METRICS BEFORE PART C REWRITING
+====================================================================
+
+=== server/services/csv_service.py ===
+SLOC: 133, LOC: 176, LLOC: 87
+Method Complexity:
+  CsvService (line 18): CC = 5
+    .__init__ (line 21): CC = 4
+    ._parse_and_validate_header (line 36): CC = 5
+    ._resolve_category_id (line 56): CC = 3
+    ._process_csv_row (line 66): CC = 6
+    .import_transactions_from_csv (line 94): CC = 7
+    .export_transactions_to_csv (line 138): CC = 2
+  __init__ (line 21): CC = 4
+  _parse_and_validate_header (line 36): CC = 5
+  _resolve_category_id (line 56): CC = 3
+  _process_csv_row (line 66): CC = 6
+  import_transactions_from_csv (line 94): CC = 7
+  export_transactions_to_csv (line 138): CC = 2
+
+=== server/services/analytics_service.py ===
+SLOC: 89, LOC: 112, LLOC: 41
+Method Complexity:
+  AnalyticsService (line 16): CC = 8
+    .__init__ (line 19): CC = 3
+    .get_financial_summary (line 28): CC = 10
+  __init__ (line 19): CC = 3
+  get_financial_summary (line 28): CC = 10
+
+=== RESPONSIBILITIES & SMELLS BEFORE REWRITE ===
+1. CsvService:
+   - Responsibilities: 5 (Header validation, column mapping, category auto-creation, row parsing/coercion, export serialization)
+   - Duplicated blocks: 2 (Category name clean & lookup repeated, raw column array lookups)
+   - Hardcoded values: Required header set, default export header without currency
+   - Max Method Complexity: import_transactions_from_csv (CC=7), _process_csv_row (CC=6)
+
+2. AnalyticsService:
+   - Responsibilities: 4 (Month input validation, financial summary computation, category distribution formatting, 12-month trend calendar building)
+   - Duplicated blocks: 0 (Monolithic single block)
+   - Hardcoded values: All Months string literal, calendar month loops with manual dictionary synthesis
+   - Max Method Complexity: get_financial_summary (CC=10, Rank B)
