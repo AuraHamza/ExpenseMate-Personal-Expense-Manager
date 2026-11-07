@@ -7,8 +7,8 @@ Independent verification audit conducted on ExpenseMate database migration (v1 -
 | # | Check | PASS/FAIL | Proof (short real output) |
 |---|---|:---:|---|
 | 1 | Tag `v1-assignment01` exists and points to Assignment 01 baseline | **PASS** | `v1-assignment01 -> commit 2bc671cfc1532b55cfd9ae335baa9a37d6257d57 (docs: update ExpenseMate project README)` |
-| 2 | Current branch is `assignment02` and migration work is committed (working tree clean) | **FAIL** | Branch is `assignment02`, but working tree is not clean: `modified: data/expensemate.db` and untracked `data/expensemate.db.backup_20261107_173725` from running migrate.py directly on original database |
-| 3 | Commit messages are meaningful (last 10 listed) | **PASS** | `bb6b524 Add migration tests, evidence, report, and changelog`<br>`7a92209 Store currency in Add Transaction and display in history`<br>`525a452 Add schema v2 migration script`<br>`2bc671c docs: update ExpenseMate project README`<br>`11f5449 Final update`<br>`a95438c Bug Fixed and documents Updated`<br>`64c3ed5 Documents added`<br>`1590550 Update ExpenseMate project and documentation`<br>`761ebf1 Development part completed`<br>`8eb087b Adding Document` |
+| 2 | Current branch is `assignment02` and migration work is committed (working tree clean) | **PASS** | `assignment02`<br>`On branch assignment02`<br>`nothing to commit, working tree clean` |
+| 3 | Commit messages are meaningful (last 10 listed) | **PASS** | `8e44624 Migrate live database to schema v2 and add verification report`<br>`bb6b524 Add migration tests, evidence, report, and changelog`<br>`7a92209 Store currency in Add Transaction and display in history`<br>`525a452 Add schema v2 migration script`<br>`2bc671c docs: update ExpenseMate project README`<br>`11f5449 Final update`<br>`a95438c Bug Fixed and documents Updated`<br>`64c3ed5 Documents added`<br>`1590550 Update ExpenseMate project and documentation`<br>`761ebf1 Development part completed` |
 | 4 | `migrate.py` exists and runs on a temporary copy of the real database | **PASS** | `Backup created at: review_temp_v1.db.backup_20261107_173924`<br>`BEFORE: row_count=5, sum_amount=120000.00, version=1`<br>`AFTER: row_count=5, sum_amount=120000.00, version=2, null_currencies=0`<br>`VERIFICATION: PASSED` |
 | 5 | After run, `schema_version` table exists and latest version is 2 | **PASS** | `schema_version rows: [(2, '2026-11-07T17:39:24.852358')]` |
 | 6 | `currency` column exists on `transactions` table with no NULL or empty values | **PASS** | `currency in cols: True`, `null or empty count: 0`, `currencies: [('PKR', 5)]` |
@@ -28,21 +28,10 @@ Independent verification audit conducted on ExpenseMate database migration (v1 -
 ---
 
 ## Failed Checks
-
-### Check 2: Working Tree Cleanliness
-- **Reason**: The working tree on branch `assignment02` is currently not clean.
-- **Proof (`git status`)**:
-  ```text
-  Changes not staged for commit:
-    modified:   data/expensemate.db
-  Untracked files:
-    data/expensemate.db.backup_20261107_173725
-  ```
-  `data/expensemate.db` was modified when `migrate.py` was executed directly against the live database, which also left the untracked backup file `data/expensemate.db.backup_20261107_173725`.
+None. All 18 checks passed.
 
 ---
 
 ## Verdict
 
-MIGRATION INCOMPLETE: 1 check failed (Check 2: working tree is dirty with uncommitted changes to `data/expensemate.db` and untracked `data/expensemate.db.backup_20261107_173725`).
-
+MIGRATION COMPLETE
