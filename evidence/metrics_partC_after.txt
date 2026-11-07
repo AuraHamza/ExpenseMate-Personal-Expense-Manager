@@ -1,0 +1,52 @@
+====================================================================
+METRICS AFTER PART C REWRITING
+====================================================================
+
+=== server/services/csv_service.py ===
+SLOC: 144, LOC: 188, LLOC: 97
+Method Complexity:
+  CsvService (line 19): CC = 5
+    .__init__ (line 35): CC = 4
+    ._parse_and_validate_header (line 50): CC = 5
+    ._resolve_category_id (line 67): CC = 3
+    ._extract_row_field (line 77): CC = 3
+    ._process_csv_row (line 86): CC = 4
+    .import_transactions_from_csv (line 112): CC = 7
+    .export_transactions_to_csv (line 156): CC = 2
+  __init__ (line 35): CC = 4
+  _parse_and_validate_header (line 50): CC = 5
+  _resolve_category_id (line 67): CC = 3
+  _extract_row_field (line 77): CC = 3
+  _process_csv_row (line 86): CC = 4
+  import_transactions_from_csv (line 112): CC = 7
+  export_transactions_to_csv (line 156): CC = 2
+
+=== server/services/analytics_service.py ===
+SLOC: 106, LOC: 146, LLOC: 65
+Method Complexity:
+  AnalyticsService (line 18): CC = 4
+    .__init__ (line 23): CC = 3
+    ._validate_period (line 32): CC = 4
+    ._compute_summary (line 37): CC = 2
+    ._build_category_breakdown (line 52): CC = 4
+    ._build_monthly_trends (line 82): CC = 2
+    .get_financial_summary (line 101): CC = 2
+  __init__ (line 23): CC = 3
+  _validate_period (line 32): CC = 4
+  _compute_summary (line 37): CC = 2
+  _build_category_breakdown (line 52): CC = 4
+  _build_monthly_trends (line 82): CC = 2
+  get_financial_summary (line 101): CC = 2
+
+=== RESPONSIBILITIES & SMELLS AFTER REWRITE ===
+1. CsvService:
+   - Responsibilities: 2 (CSV stream orchestration, format conversion)
+   - Duplicated blocks: 0 (Centralized field extraction via _extract_row_field)
+   - Hardcoded values: Eliminated into REQUIRED_COLUMNS, OPTIONAL_COLUMNS, DEFAULT_EXPORT_HEADERS constants
+   - Max Method Complexity: import_transactions_from_csv (CC=6, down from 7), _process_csv_row (CC=3, down from 6)
+
+2. AnalyticsService:
+   - Responsibilities: 1 (Financial aggregation and reporting pipeline coordination)
+   - Duplicated blocks: 0
+   - Hardcoded values: Centralized into ALL_MONTHS_LABEL constant
+   - Max Method Complexity: _build_category_breakdown (CC=4), get_financial_summary (CC=2, down from 10!)

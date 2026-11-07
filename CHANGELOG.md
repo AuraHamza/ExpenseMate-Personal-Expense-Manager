@@ -2,6 +2,30 @@
 
 All notable changes to the ExpenseMate project will be documented in this file.
 
+## [v2.2 - Part C Rewriting Selected Classes] - 2026-11-07
+
+### Complete Class Rewrites (`CsvService` & `AnalyticsService`)
+- **Reason**: Replace complex, tightly coupled, and hard-to-test service implementations with clean, single-responsibility, highly maintainable designs while preserving 100% of public behavior and API contracts.
+- **Rewritten Classes**:
+  - **`server/services/csv_service.py` (`CsvService`)**:
+    - Replaced coupled multi-responsibility class with a staged architecture: centralized schema constants (`REQUIRED_COLUMNS`, `OPTIONAL_COLUMNS`, `DEFAULT_EXPORT_HEADERS`), isolated cell extraction with default fallbacks (`_extract_row_field`), and decoupled batch ingestion from array bounds checks. Reduced row processor complexity from CC=6 to CC=4.
+  - **`server/services/analytics_service.py` (`AnalyticsService`)**:
+    - Replaced the monolithic 62-line procedure (`get_financial_summary`, formerly CC=10, Rank B) with a decomposed computational pipeline (`_validate_period`, `_compute_summary`, `_build_category_breakdown`, `_build_monthly_trends`). Reduced pipeline coordinator complexity from CC=10 to CC=2 (Rank A).
+- **Files Affected**:
+  - `server/services/csv_service.py`: Complete class rewrite.
+  - `server/services/analytics_service.py`: Complete class rewrite.
+  - `tests/unit/test_partC_characterization.py`: Safety-net characterization tests proving behavior preservation before and after rewrite.
+  - `tests/unit/test_partC_rewrites.py`: Dedicated unit tests for newly isolated calculation methods and edge cases.
+  - `docs/rewrite_candidates.md`: Comprehensive review and ranking of rewrite candidates across the codebase.
+  - `docs/partC_comparison.md`: Before-and-after maintainability comparison table.
+  - `docs/class_rewrites.md`: Mermaid class diagrams comparing old vs rewritten architectures.
+  - `docs/rewriting_report.md`: Formal engineering rewrite report detailing problems, solutions, and code snippets.
+  - `evidence/metrics_partC_before.txt` & `evidence/metrics_partC_after.txt`: Radon and SLOC metrics.
+  - `evidence/partC_characterization_before.txt`: Test log proving pre-rewrite behavior.
+  - `evidence/partC_pytest.txt`: Full test suite log showing 70/70 passing tests.
+  - `evidence/partC_regression.txt`: Full regression log verifying import/export and analytics APIs.
+  - `evidence/partC_behaviour_diff.txt`: Differential comparison verifying 0 unexpected API response differences.
+
 ## [v2.1 - Part B Refactoring] - 2026-11-07
 
 ### Layered Architecture Refactoring (Controller -> Services -> Repository -> Database)
