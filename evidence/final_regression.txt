@@ -1,0 +1,108 @@
+====================================================================
+FINAL END-TO-END REGRESSION OF ALL ASSIGNMENT 01 FEATURES
+====================================================================
+
+1. Health Check: GET /api/health -> Status 200, data={'data': {'status': 'ok'}, 'success': True}
+2. Get Categories: GET /api/categories -> Status 200, count=11
+3. Create Category: POST /api/categories -> Status 201, data={'data': {'id': 23, 'name': 'Freelance'}, 'success': True}
+4. Set Budget: POST /api/budgets -> Status 201, data={'data': {'amount': 1000.0, 'category_id': 1, 'category_name': 'Food & Dining', 'created_at': '2026-11-07 20:09:10', 'id': 1, 'month': 11, 'percentage': 0.0, 'remaining': 1000.0, 'spent': 0.0, 'status': 'normal', 'updated_at': '2026-11-07 20:09:10', 'year': 2026}, 'success': True}
+5. Add Transaction (Normal): POST /api/transactions -> Status 201, id=1, alert=None
+6. Add Transaction (80% Warning): POST /api/transactions -> Status 201, id=2, alert_level=WARNING
+7. Add Transaction (100% Exceeded): POST /api/transactions -> Status 201, id=3, alert_level=ALERT
+8. Edit Transaction: PUT /api/transactions/1 -> Status 200, data={'data': {'alert': {'budget_amount': 1000.0, 'category_id': 1, 'category_name': 'Food & Dining', 'has_alert': True, 'level': 'ALERT', 'message': 'Alert: You have reached 100% of your Food & Dining budget. Spent: $1,050.00 of $1,000.00 (105.0%).', 'month': 11, 'percentage': 105.0, 'spent': 1050.0, 'year': 2026}, 'transaction': {'amount': 250.0, 'category_id': 1, 'category_name': 'Food & Dining', 'created_at': '2026-11-07 20:09:10', 'currency': 'PKR', 'date': '2026-11-01', 'description': 'Updated Groceries', 'id': 1, 'type': 'expense', 'updated_at': '2026-11-07 20:09:11'}}, 'success': True}
+9. History / Transactions: GET /api/transactions -> Status 200, count=3
+10. Delete Transaction: DELETE /api/transactions/3 -> Status 200, data={'data': {'message': 'Transaction deleted successfully.'}, 'success': True}
+11. CSV Export: GET /api/csv/export -> Status 200, header=ID,Type,Amount,Date,Category,Description,Created At, rows=2
+12. CSV Import: POST /api/csv/import -> Status 200, data={'data': {'alerts': [{'budget_amount': 1000.0, 'category_id': 1, 'category_name': 'Food & Dining', 'has_alert': True, 'level': 'WARNING', 'message': 'Warning: You have reached 80% of your Food & Dining budget. Spent: $970.00 of $1,000.00 (97.0%).', 'month': 11, 'percentage': 97.0, 'spent': 970.0, 'year': 2026}], 'errors': [], 'failed_count': 0, 'imported_count': 2, 'total_rows_processed': 2}, 'success': True}
+13. Analytics Summary: GET /api/analytics?year=2026&month=11 -> Status 200, summary={'net_savings': 4030.0, 'savings_rate': 80.6, 'total_expense': 970.0, 'total_income': 5000.0}
+14. Chart Data: Breakdown items=0, Trends months=12, Chart Labels=[]
+
+============================= test session starts =============================
+platform win32 -- Python 3.14.6, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\3 BROS COMPUTERZ\AppData\Local\Programs\Python\Python314\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\3 BROS COMPUTERZ\Desktop\ExpenseMate-Personal-Expense-Manager
+plugins: cov-7.1.0
+collecting ... collected 80 items
+
+tests/integration/test_api.py::test_api_health PASSED                    [  1%]
+tests/integration/test_api.py::test_api_categories PASSED                [  2%]
+tests/integration/test_api.py::test_api_transaction_crud PASSED          [  3%]
+tests/integration/test_api.py::test_api_budget_endpoints PASSED          [  5%]
+tests/integration/test_api.py::test_api_analytics_endpoint PASSED        [  6%]
+tests/integration/test_api.py::test_api_csv_endpoints PASSED             [  7%]
+tests/integration/test_api.py::test_api_budget_alert_warning_and_alert PASSED [  8%]
+tests/integration/test_api.py::test_api_get_transactions_reversed_date_range PASSED [ 10%]
+tests/integration/test_api.py::test_api_create_duplicate_category_rejected PASSED [ 11%]
+tests/integration/test_api.py::test_api_analytics_category_filter PASSED [ 12%]
+tests/integration/test_api.py::test_csv_export_returns_all_rows PASSED   [ 13%]
+tests/integration/test_partB_flows.py::test_flow_1_add_expense_triggers_budget_alert PASSED [ 15%]
+tests/integration/test_partB_flows.py::test_flow_2_monthly_summary_totals_are_correct PASSED [ 16%]
+tests/integration/test_partB_flows.py::test_flow_3_currency_stored_on_new_transactions PASSED [ 17%]
+tests/integration/test_partB_flows.py::test_flow_4_invalid_input_is_rejected PASSED [ 18%]
+tests/integration/test_partB_flows.py::test_flow_5_csv_export_still_works PASSED [ 20%]
+tests/system/test_end_to_end.py::test_full_system_workflow PASSED        [ 21%]
+tests/unit/test_alert_service.py::test_alert_below_80_percent PASSED     [ 22%]
+tests/unit/test_alert_service.py::test_alert_at_80_percent PASSED        [ 23%]
+tests/unit/test_alert_service.py::test_alert_at_100_percent PASSED       [ 25%]
+tests/unit/test_alert_service.py::test_income_does_not_trigger_alert PASSED [ 26%]
+tests/unit/test_analytics_service.py::test_financial_summary_calculations PASSED [ 27%]
+tests/unit/test_analytics_service.py::test_financial_summary_category_filter PASSED [ 28%]
+tests/unit/test_api_client.py::test_api_client_health_success PASSED     [ 30%]
+tests/unit/test_api_client.py::test_api_client_connection_error PASSED   [ 31%]
+tests/unit/test_api_client.py::test_api_client_timeout_error PASSED      [ 32%]
+tests/unit/test_api_client.py::test_api_client_http_error_response PASSED [ 33%]
+tests/unit/test_api_client.py::test_api_client_non_json_response PASSED  [ 35%]
+tests/unit/test_architecture_layers.py::test_service_with_mock_repository PASSED [ 36%]
+tests/unit/test_architecture_layers.py::test_budget_service_with_mock_repository PASSED [ 37%]
+tests/unit/test_architecture_layers.py::test_category_service_with_mock_repository PASSED [ 38%]
+tests/unit/test_architecture_layers.py::test_budget_calculator_pure_logic PASSED [ 40%]
+tests/unit/test_architecture_layers.py::test_transaction_repository_on_temp_db PASSED [ 41%]
+tests/unit/test_architecture_layers.py::test_budget_repository_on_temp_db PASSED [ 42%]
+tests/unit/test_architecture_layers.py::test_transactions_route_with_mock_service PASSED [ 43%]
+tests/unit/test_architecture_layers.py::test_categories_route_with_mock_service PASSED [ 45%]
+tests/unit/test_budget_service.py::test_create_and_retrieve_budget PASSED [ 46%]
+tests/unit/test_budget_service.py::test_update_budget_amount PASSED      [ 47%]
+tests/unit/test_budget_service.py::test_calculate_budget_usage PASSED    [ 48%]
+tests/unit/test_budget_service.py::test_reject_invalid_budget PASSED     [ 50%]
+tests/unit/test_csv_exporter.py::test_csv_exporter_headers_and_data_rows PASSED [ 51%]
+tests/unit/test_csv_exporter.py::test_csv_exporter_empty_list PASSED     [ 52%]
+tests/unit/test_csv_exporter.py::test_csv_exporter_special_characters_commas_and_quotes PASSED [ 53%]
+tests/unit/test_csv_exporter.py::test_csv_exporter_filter_arguments_propagation PASSED [ 55%]
+tests/unit/test_csv_service.py::test_import_valid_and_malformed_csv PASSED [ 56%]
+tests/unit/test_csv_service.py::test_export_transactions_to_csv PASSED   [ 57%]
+tests/unit/test_migration.py::test_migration_preserves_row_count_and_totals PASSED [ 58%]
+tests/unit/test_migration.py::test_migration_idempotent PASSED           [ 60%]
+tests/unit/test_migration.py::test_all_migrated_rows_have_currency_pkr PASSED [ 61%]
+tests/unit/test_migration.py::test_adding_new_transaction_after_migration_stores_currency PASSED [ 62%]
+tests/unit/test_partC_characterization.py::test_csv_service_char_empty_content_raises PASSED [ 63%]
+tests/unit/test_partC_characterization.py::test_csv_service_char_missing_headers_raises PASSED [ 65%]
+tests/unit/test_partC_characterization.py::test_csv_service_char_import_normal_and_new_category PASSED [ 66%]
+tests/unit/test_partC_characterization.py::test_csv_service_char_import_partial_failures_continues PASSED [ 67%]
+tests/unit/test_partC_characterization.py::test_csv_service_char_export_format PASSED [ 68%]
+tests/unit/test_partC_characterization.py::test_analytics_service_char_month_validation PASSED [ 70%]
+tests/unit/test_partC_characterization.py::test_analytics_service_char_empty_summary PASSED [ 71%]
+tests/unit/test_partC_characterization.py::test_analytics_service_char_populated_summary PASSED [ 72%]
+tests/unit/test_partC_rewrites.py::test_csv_header_parser_valid_columns PASSED [ 73%]
+tests/unit/test_partC_rewrites.py::test_csv_header_parser_missing_required_raises PASSED [ 75%]
+tests/unit/test_partC_rewrites.py::test_csv_row_mapper_extract_field_defaults PASSED [ 76%]
+tests/unit/test_partC_rewrites.py::test_csv_row_mapper_resolve_category_creates_if_not_found PASSED [ 77%]
+tests/unit/test_partC_rewrites.py::test_csv_row_mapper_resolve_category_empty_raises PASSED [ 78%]
+tests/unit/test_partC_rewrites.py::test_csv_row_mapper_map_and_ingest_row_success PASSED [ 80%]
+tests/unit/test_partC_rewrites.py::test_csv_exporter_serialization PASSED [ 81%]
+tests/unit/test_partC_rewrites.py::test_csv_service_skips_blank_rows PASSED [ 82%]
+tests/unit/test_partC_rewrites.py::test_csv_service_currency_propagation_to_transaction_service PASSED [ 83%]
+tests/unit/test_partC_rewrites.py::test_analytics_service_isolated_compute_summary_edge_cases PASSED [ 85%]
+tests/unit/test_partC_rewrites.py::test_analytics_service_isolated_build_category_breakdown PASSED [ 86%]
+tests/unit/test_partC_rewrites.py::test_analytics_service_isolated_build_monthly_trends PASSED [ 87%]
+tests/unit/test_transaction_service.py::test_add_valid_transaction PASSED [ 88%]
+tests/unit/test_transaction_service.py::test_reject_invalid_transaction_amount PASSED [ 90%]
+tests/unit/test_transaction_service.py::test_reject_invalid_transaction_type PASSED [ 91%]
+tests/unit/test_transaction_service.py::test_reject_invalid_transaction_date PASSED [ 92%]
+tests/unit/test_transaction_service.py::test_reject_nonexistent_category PASSED [ 93%]
+tests/unit/test_transaction_service.py::test_edit_transaction PASSED     [ 95%]
+tests/unit/test_transaction_service.py::test_delete_transaction PASSED   [ 96%]
+tests/unit/test_transaction_service.py::test_budget_alert_warning_then_alert_5000_budget PASSED [ 97%]
+tests/unit/test_transaction_service.py::test_reject_duplicate_category_creation PASSED [ 98%]
+tests/unit/test_transaction_service.py::test_reject_reversed_date_range_filter PASSED [100%]
+
+============================= 80 passed in 11.64s =============================
