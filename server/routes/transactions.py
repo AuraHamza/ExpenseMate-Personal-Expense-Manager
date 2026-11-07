@@ -75,6 +75,7 @@ def create_transaction():
             date_str=data.get("date"),
             category_id=data.get("category_id"),
             description=data.get("description", ""),
+            currency=data.get("currency", "PKR"),
         )
         return (
             jsonify(
@@ -113,6 +114,7 @@ def update_transaction(trans_id: int):
             date_str=data.get("date"),
             category_id=data.get("category_id"),
             description=data.get("description", ""),
+            currency=data.get("currency"),
         )
         return (
             jsonify(

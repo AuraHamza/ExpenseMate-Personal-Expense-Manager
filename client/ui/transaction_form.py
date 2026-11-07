@@ -183,6 +183,7 @@ class TransactionForm(ttk.LabelFrame):
                 date_str=date_str,
                 category_id=cat_id,
                 description=self.desc_var.get().strip(),
+                currency="PKR",
             )
             self._handle_transaction_alert(result.get("alert"))
             self.clear_form()

@@ -100,6 +100,7 @@ class ApiClient:
         date_str: str,
         category_id: int,
         description: str = "",
+        currency: str = "PKR",
     ) -> Dict[str, Any]:
         """
         Create a new transaction.
@@ -108,6 +109,7 @@ class ApiClient:
         payload = {
             "type": trans_type,
             "amount": amount,
+            "currency": currency,
             "date": date_str,
             "category_id": category_id,
             "description": description,
@@ -122,6 +124,7 @@ class ApiClient:
         date_str: str,
         category_id: int,
         description: str = "",
+        currency: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Update an existing transaction.
@@ -134,6 +137,8 @@ class ApiClient:
             "category_id": category_id,
             "description": description,
         }
+        if currency is not None:
+            payload["currency"] = currency
         return self._request("PUT", f"/api/transactions/{trans_id}", json=payload)
 
     def delete_transaction(self, trans_id: int) -> bool:

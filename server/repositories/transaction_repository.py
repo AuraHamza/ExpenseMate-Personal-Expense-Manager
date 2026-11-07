@@ -27,6 +27,7 @@ class TransactionRepository:
                     t.id,
                     t.type,
                     t.amount,
+                    t.currency,
                     t.date,
                     t.category_id,
                     c.name AS category_name,
@@ -73,6 +74,7 @@ class TransactionRepository:
                     t.id,
                     t.type,
                     t.amount,
+                    t.currency,
                     t.date,
                     t.category_id,
                     c.name AS category_name,
@@ -96,6 +98,7 @@ class TransactionRepository:
         trans_date: str,
         category_id: int,
         description: str = "",
+        currency: str = "PKR",
     ) -> int:
         """Insert a new transaction and return the generated ID."""
         conn = get_db_connection(self.db_path)
@@ -103,14 +106,15 @@ class TransactionRepository:
             cursor = conn.cursor()
             query = """
                 INSERT INTO transactions
-                    (type, amount, date, category_id, description, created_at, updated_at)
-                VALUES (?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'));
+                    (type, amount, currency, date, category_id, description, created_at, updated_at)
+                VALUES (?, ?, ?, ?, ?, ?, datetime('now', 'localtime'), datetime('now', 'localtime'));
             """
             cursor.execute(
                 query,
                 (
                     trans_type.lower(),
                     amount,
+                    (currency or "PKR").strip().upper(),
                     trans_date,
                     category_id,
                     description.strip(),
@@ -129,32 +133,53 @@ class TransactionRepository:
         trans_date: str,
         category_id: int,
         description: str = "",
+        currency: Optional[str] = None,
     ) -> bool:
         """Update an existing transaction. Returns True if row was modified."""
         conn = get_db_connection(self.db_path)
         try:
             cursor = conn.cursor()
-            query = """
-                UPDATE transactions
-                SET type = ?,
-                    amount = ?,
-                    date = ?,
-                    category_id = ?,
-                    description = ?,
-                    updated_at = datetime('now', 'localtime')
-                WHERE id = ?;
-            """
-            cursor.execute(
-                query,
-                (
+            if currency is not None:
+                query = """
+                    UPDATE transactions
+                    SET type = ?,
+                        amount = ?,
+                        currency = ?,
+                        date = ?,
+                        category_id = ?,
+                        description = ?,
+                        updated_at = datetime('now', 'localtime')
+                    WHERE id = ?;
+                """
+                params = (
+                    trans_type.lower(),
+                    amount,
+                    currency.strip().upper(),
+                    trans_date,
+                    category_id,
+                    description.strip(),
+                    transaction_id,
+                )
+            else:
+                query = """
+                    UPDATE transactions
+                    SET type = ?,
+                        amount = ?,
+                        date = ?,
+                        category_id = ?,
+                        description = ?,
+                        updated_at = datetime('now', 'localtime')
+                    WHERE id = ?;
+                """
+                params = (
                     trans_type.lower(),
                     amount,
                     trans_date,
                     category_id,
                     description.strip(),
                     transaction_id,
-                ),
-            )
+                )
+            cursor.execute(query, params)
             conn.commit()
             return cursor.rowcount > 0
         finally:

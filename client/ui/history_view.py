@@ -81,14 +81,15 @@ class HistoryView(ttk.Frame):
         table_frame = ttk.Frame(self)
         table_frame.pack(fill="both", expand=True, padx=5, pady=5)
 
-        columns = ("id", "type", "amount", "date", "category", "description")
+        columns = ("id", "type", "amount", "currency", "date", "category", "description")
         self.tree = ttk.Treeview(
             table_frame, columns=columns, show="headings", selectmode="browse"
         )
 
         self.tree.heading("id", text="ID")
         self.tree.heading("type", text="Type")
-        self.tree.heading("amount", text="Amount ($)")
+        self.tree.heading("amount", text="Amount")
+        self.tree.heading("currency", text="Currency")
         self.tree.heading("date", text="Date")
         self.tree.heading("category", text="Category")
         self.tree.heading("description", text="Description")
@@ -96,6 +97,7 @@ class HistoryView(ttk.Frame):
         self.tree.column("id", width=50, anchor="center")
         self.tree.column("type", width=80, anchor="center")
         self.tree.column("amount", width=100, anchor="e")
+        self.tree.column("currency", width=70, anchor="center")
         self.tree.column("date", width=100, anchor="center")
         self.tree.column("category", width=150, anchor="w")
         self.tree.column("description", width=250, anchor="w")
@@ -209,8 +211,9 @@ class HistoryView(ttk.Frame):
         for t in items:
             t_type = t.get("type", "").lower()
             amt_val = float(t.get("amount", 0.0))
+            curr = t.get("currency", "PKR")
             amt_display = (
-                f"+${amt_val:,.2f}" if t_type == "income" else f"-${amt_val:,.2f}"
+                f"+{amt_val:,.2f}" if t_type == "income" else f"-{amt_val:,.2f}"
             )
 
             self.tree.insert(
@@ -221,6 +224,7 @@ class HistoryView(ttk.Frame):
                     t["id"],
                     t_type.capitalize(),
                     amt_display,
+                    curr,
                     t.get("date", ""),
                     t.get("category_name", ""),
                     t.get("description", ""),

@@ -92,6 +92,7 @@ class TransactionService:
         date_str: str,
         category_id: Any,
         description: str = "",
+        currency: str = "PKR",
     ) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
         """
         Add a new transaction and check for budget alerts.
@@ -101,12 +102,15 @@ class TransactionService:
             trans_type, amount, date_str, category_id
         )
 
+        currency_val = str(currency or "PKR").strip().upper()
+
         trans_id = self.transaction_repo.create(
             trans_type=n_type,
             amount=n_amount,
             trans_date=n_date,
             category_id=cat_id,
             description=str(description or "").strip(),
+            currency=currency_val,
         )
 
         transaction = self.transaction_repo.get_by_id(trans_id)
@@ -129,6 +133,7 @@ class TransactionService:
         date_str: str,
         category_id: Any,
         description: str = "",
+        currency: Optional[str] = None,
     ) -> Tuple[Dict[str, Any], Optional[Dict[str, Any]]]:
         """
         Update an existing transaction and re-evaluate budget alerts.
@@ -141,6 +146,8 @@ class TransactionService:
             trans_type, amount, date_str, category_id
         )
 
+        currency_val = str(currency).strip().upper() if currency is not None else None
+
         success = self.transaction_repo.update(
             transaction_id=transaction_id,
             trans_type=n_type,
@@ -148,6 +155,7 @@ class TransactionService:
             trans_date=n_date,
             category_id=cat_id,
             description=str(description or "").strip(),
+            currency=currency_val,
         )
 
         if not success:

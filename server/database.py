@@ -62,6 +62,7 @@ def init_db(db_path: Optional[str] = None) -> None:
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 type TEXT NOT NULL CHECK(type IN ('income', 'expense')),
                 amount REAL NOT NULL CHECK(amount > 0),
+                currency TEXT NOT NULL DEFAULT 'PKR',
                 date TEXT NOT NULL,
                 category_id INTEGER NOT NULL,
                 description TEXT DEFAULT '',
@@ -69,6 +70,17 @@ def init_db(db_path: Optional[str] = None) -> None:
                 updated_at TEXT DEFAULT (datetime('now', 'localtime')),
                 FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE RESTRICT
             );
+            """)
+
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS schema_version (
+                version INTEGER PRIMARY KEY,
+                applied_at TEXT NOT NULL
+            );
+            """)
+        cursor.execute("""
+            INSERT OR IGNORE INTO schema_version (version, applied_at)
+            VALUES (2, datetime('now', 'localtime'));
             """)
 
         # Indexes on date and category for efficient filtering and aggregations
