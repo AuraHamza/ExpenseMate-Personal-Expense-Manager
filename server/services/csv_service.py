@@ -1,22 +1,36 @@
 """
-CSV Service
-Handles robust CSV import and export for transactions:
-- Validates rows individually so malformed rows do not abort the entire batch.
-- Automatically handles new categories or links existing ones.
-- Captures budget alerts triggered during batch import.
-- Exports filtered or complete transaction history into standard RFC 4180 CSV.
+CSV Service (Rewritten implementation for Part C)
+
+Modular, staged architecture for RFC 4180 CSV import/export:
+1. Header & Row parsing using named constants and schema validation.
+2. Distinct category resolution via CategoryService/CategoryRepository.
+3. Row-level transaction ingestion with isolated error trapping.
+4. Clean RFC 4180 CSV export generation including schema v2 fields.
 """
 
 import csv
 import io
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Optional, Dict, Any, List, Tuple, Set
 from server.repositories.category_repository import CategoryRepository
 from server.repositories.transaction_repository import TransactionRepository
 from server.services.transaction_service import TransactionService
 
 
 class CsvService:
-    """Provides CSV parsing, validation, ingestion, and generation."""
+    """Provides modular CSV parsing, validation, ingestion, and generation."""
+
+    # Explicit schema constants
+    REQUIRED_COLUMNS: Set[str] = {"type", "amount", "date", "category"}
+    OPTIONAL_COLUMNS: Set[str] = {"description", "currency"}
+    DEFAULT_EXPORT_HEADERS: List[str] = [
+        "ID",
+        "Type",
+        "Amount",
+        "Date",
+        "Category",
+        "Description",
+        "Created At",
+    ]
 
     def __init__(
         self,
@@ -33,28 +47,25 @@ class CsvService:
             db_path=db_path,
         )
 
-    def _parse_and_validate_header(self, reader) -> Tuple[Dict[str, int], int]:
-        """Validate CSV header and return column index mapping and description index."""
+    def _parse_and_validate_header(self, reader) -> Dict[str, int]:
+        """Validate CSV header and return a clean lowercase column-to-index mapping."""
         try:
             raw_header = next(reader)
         except StopIteration:
             raise ValueError("CSV file has no content.")
 
         header = [col.strip().lower() for col in raw_header]
-        required_cols = {"type", "amount", "date", "category"}
-        missing = required_cols - set(header)
+        missing = self.REQUIRED_COLUMNS - set(header)
         if missing:
             missing_cols = ", ".join(sorted(missing))
             raise ValueError(
                 f"CSV header missing required columns: {missing_cols}. Found: {raw_header}"
             )
 
-        col_map = {col: idx for idx, col in enumerate(header)}
-        desc_idx = col_map.get("description", -1)
-        return col_map, desc_idx
+        return {col: idx for idx, col in enumerate(header)}
 
     def _resolve_category_id(self, cat_name: str) -> int:
-        """Find or register a category by name, returning its ID."""
+        """Find or auto-register a category by name, returning its integer ID."""
         clean_name = cat_name.strip()
         if not clean_name:
             raise ValueError("Category name cannot be empty.")
@@ -63,22 +74,28 @@ class CsvService:
             return existing_cat["id"]
         return self.category_repo.create(clean_name)
 
+    def _extract_row_field(
+        self, row: List[str], col_map: Dict[str, int], col_name: str, default: str = ""
+    ) -> str:
+        """Safely extract a cell value by column name, returning stripped string."""
+        idx = col_map.get(col_name, -1)
+        if idx != -1 and idx < len(row):
+            return row[idx].strip()
+        return default
+
     def _process_csv_row(
-        self, row: List[str], col_map: Dict[str, int], desc_idx: int
+        self, row: List[str], col_map: Dict[str, int]
     ) -> Tuple[bool, Optional[Dict[str, Any]]]:
         """Process a single CSV row, returning (is_valid_row, alert_or_None)."""
         if not row or all(not cell.strip() for cell in row):
             return False, None
 
-        trans_type = row[col_map["type"]].strip()
-        raw_amount = row[col_map["amount"]].strip()
-        date_str = row[col_map["date"]].strip()
-        cat_name = row[col_map["category"]].strip()
-        desc = (
-            row[desc_idx].strip()
-            if desc_idx != -1 and desc_idx < len(row)
-            else ""
-        )
+        trans_type = self._extract_row_field(row, col_map, "type")
+        raw_amount = self._extract_row_field(row, col_map, "amount")
+        date_str = self._extract_row_field(row, col_map, "date")
+        cat_name = self._extract_row_field(row, col_map, "category")
+        desc = self._extract_row_field(row, col_map, "description")
+        currency = self._extract_row_field(row, col_map, "currency", default="PKR")
 
         category_id = self._resolve_category_id(cat_name)
 
@@ -88,21 +105,22 @@ class CsvService:
             date_str=date_str,
             category_id=category_id,
             description=desc,
+            currency=currency,
         )
         return True, alert
 
     def import_transactions_from_csv(self, csv_content: str) -> Dict[str, Any]:
         """
-        Parse and validate CSV content, inserting valid rows.
+        Parse and validate CSV content, inserting valid rows with error isolation.
         Does NOT crash on individual invalid rows.
-        Returns a summary of imported, skipped, errors, and alerts.
+        Returns a summary dict containing total, imported, failed, errors, and alerts.
         """
         if not csv_content or not csv_content.strip():
             raise ValueError("CSV content is empty.")
 
         f = io.StringIO(csv_content.strip())
         reader = csv.reader(f)
-        col_map, desc_idx = self._parse_and_validate_header(reader)
+        col_map = self._parse_and_validate_header(reader)
 
         imported_count = 0
         failed_count = 0
@@ -111,7 +129,7 @@ class CsvService:
 
         for row_idx, row in enumerate(reader, start=2):
             try:
-                processed, alert = self._process_csv_row(row, col_map, desc_idx)
+                processed, alert = self._process_csv_row(row, col_map)
                 if not processed:
                     continue
                 imported_count += 1
@@ -142,9 +160,7 @@ class CsvService:
         category_id: Optional[int] = None,
         trans_type: Optional[str] = None,
     ) -> str:
-        """
-        Export transactions matching filter criteria to RFC 4180 CSV format.
-        """
+        """Export filtered transactions into RFC 4180 CSV string format."""
         transactions = self.transaction_repo.get_all(
             start_date=start_date,
             end_date=end_date,
@@ -154,11 +170,7 @@ class CsvService:
 
         output = io.StringIO()
         writer = csv.writer(output, lineterminator="\n")
-
-        # Write header
-        writer.writerow(
-            ["ID", "Type", "Amount", "Date", "Category", "Description", "Created At"]
-        )
+        writer.writerow(self.DEFAULT_EXPORT_HEADERS)
 
         for t in transactions:
             writer.writerow(
