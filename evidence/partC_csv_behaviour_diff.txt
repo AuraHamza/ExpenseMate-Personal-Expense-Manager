@@ -1,0 +1,26 @@
+====================================================================
+PART C CSV BEHAVIOUR DIFF REPORT: BASELINE (f1aab75) vs HEAD
+====================================================================
+
+1. CSV IMPORT RESPONSE DIFF:
+Baseline response: {"alerts": [], "errors": [], "failed_count": 0, "imported_count": 2, "total_rows_processed": 2}
+HEAD response:     {"alerts": [], "errors": [], "failed_count": 0, "imported_count": 2, "total_rows_processed": 2}
+Diff: NONE (Exact match: True)
+
+2. CSV EXPORT STRUCTURE DIFF:
+Baseline Headers: ID,Type,Amount,Date,Category,Description,Created At
+HEAD Headers:     ID,Type,Amount,Date,Category,Description,Created At
+Header Match:     True
+
+Export content match (excluding dynamic creation timestamp):
+True
+
+Baseline Export Sample:
+ID,Type,Amount,Date,Category,Description,Created At
+2,income,1000.00,2026-11-02,Salary,Bonus,2026-11-07 19:04:36
+1,expense,50.00,2026-11-01,Food,Lunch,2026-11-07 19:04:36
+
+HEAD Export Sample:
+ID,Type,Amount,Date,Category,Description,Created At
+2,income,1000.00,2026-11-02,Salary,Bonus,2026-11-07 19:04:36
+1,expense,50.00,2026-11-01,Food,Lunch,2026-11-07 19:04:36
