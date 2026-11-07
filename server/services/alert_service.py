@@ -11,6 +11,7 @@ from typing import Optional, Dict, Any, List
 from server.repositories.budget_repository import BudgetRepository
 from server.repositories.transaction_repository import TransactionRepository
 from server.repositories.category_repository import CategoryRepository
+from server.services.budget_calculator import BudgetCalculator
 
 
 class AlertService:
@@ -45,28 +46,27 @@ class AlertService:
             category_id, year, month
         )
         budget_amount = float(budget["amount"])
-        ratio = spent / budget_amount
-        percentage = ratio * 100.0
+        has_alert, level = BudgetCalculator.evaluate_alert_level(spent, budget_amount)
+        if not has_alert:
+            return None
+
+        _, percentage, _ = BudgetCalculator.calculate_progress(spent, budget_amount)
 
         category_name = budget.get("category_name")
         if not category_name:
             cat = self.category_repo.get_by_id(category_id)
             category_name = cat["name"] if cat else f"Category #{category_id}"
 
-        if percentage >= 100.0:
-            level = "ALERT"
+        if level == "ALERT":
             message = (
                 f"Alert: You have reached 100% of your {category_name} budget. "
                 f"Spent: ${spent:,.2f} of ${budget_amount:,.2f} ({percentage:.1f}%)."
             )
-        elif percentage >= 80.0:
-            level = "WARNING"
+        else:
             message = (
                 f"Warning: You have reached 80% of your {category_name} budget. "
                 f"Spent: ${spent:,.2f} of ${budget_amount:,.2f} ({percentage:.1f}%)."
             )
-        else:
-            return None
 
         return {
             "has_alert": True,

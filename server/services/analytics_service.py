@@ -35,6 +35,8 @@ class AnalyticsService:
         Produce a complete analytics summary for a given year and optional month,
         optionally filtered by category_id.
         """
+        if month is not None and (month < 1 or month > 12):
+            raise ValueError(f"Month parameter must be between 1 and 12. Received: {month}")
         totals = self.transaction_repo.get_totals_by_type_and_month(
             year, month, category_id=category_id
         )

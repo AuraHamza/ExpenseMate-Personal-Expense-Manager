@@ -10,6 +10,7 @@ from typing import Optional, Dict, Any, List
 from server.repositories.budget_repository import BudgetRepository
 from server.repositories.category_repository import CategoryRepository
 from server.repositories.transaction_repository import TransactionRepository
+from server.services.budget_calculator import BudgetCalculator
 
 
 class BudgetService:
@@ -151,22 +152,16 @@ class BudgetService:
         spent = self.transaction_repo.get_spending_by_category_and_month(
             cat_id, year, month
         )
-        remaining = amount - spent
-        percentage = (spent / amount * 100.0) if amount > 0 else 0.0
-
-        if percentage >= 100.0:
-            status = "exceeded"
-        elif percentage >= 80.0:
-            status = "warning"
-        else:
-            status = "normal"
+        remaining, percentage, status = BudgetCalculator.calculate_progress(
+            spent=spent, budget_amount=amount
+        )
 
         result = dict(budget)
         result.update(
             {
                 "spent": round(spent, 2),
-                "remaining": round(remaining, 2),
-                "percentage": round(percentage, 1),
+                "remaining": remaining,
+                "percentage": percentage,
                 "status": status,
             }
         )

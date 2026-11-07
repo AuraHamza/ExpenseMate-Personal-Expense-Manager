@@ -11,6 +11,8 @@ from server.services.budget_service import BudgetService
 from server.services.alert_service import AlertService
 from server.services.analytics_service import AnalyticsService
 from server.services.csv_service import CsvService
+from server.services.category_service import CategoryService
+from server.services.budget_calculator import BudgetCalculator
 
 __all__ = [
     "TransactionService",
@@ -18,4 +20,6 @@ __all__ = [
     "AlertService",
     "AnalyticsService",
     "CsvService",
+    "CategoryService",
+    "BudgetCalculator",
 ]

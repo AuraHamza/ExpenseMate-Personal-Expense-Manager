@@ -8,22 +8,22 @@ POST /api/categories
 """
 
 from flask import Blueprint, request, jsonify, current_app
-from server.repositories.category_repository import CategoryRepository
+from server.services.category_service import CategoryService
 
 categories_bp = Blueprint("categories", __name__, url_prefix="/api/categories")
 
 
-def _get_category_repo() -> CategoryRepository:
+def _get_category_service() -> CategoryService:
     db_path = current_app.config.get("DB_PATH")
-    return CategoryRepository(db_path=db_path)
+    return CategoryService(db_path=db_path)
 
 
 @categories_bp.route("", methods=["GET"])
 def get_all_categories():
     """Retrieve all available categories."""
     try:
-        repo = _get_category_repo()
-        categories = repo.get_all()
+        service = _get_category_service()
+        categories = service.get_all_categories()
         return jsonify({"success": True, "data": categories}), 200
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
@@ -41,26 +41,13 @@ def create_category():
             400,
         )
 
-    name = str(data["name"]).strip()
-    if not name:
-        return (
-            jsonify({"success": False, "error": "Category name cannot be empty."}),
-            400,
-        )
-
-    repo = _get_category_repo()
-    existing = repo.get_by_name(name)
-    if existing:
-        return (
-            jsonify({"success": False, "error": f"Category '{name}' already exists."}),
-            409,
-        )
-
     try:
-        cat_id = repo.create(name)
-        new_cat = repo.get_by_id(cat_id)
+        service = _get_category_service()
+        new_cat = service.create_category(data.get("name"))
         return jsonify({"success": True, "data": new_cat}), 201
     except ValueError as e:
-        return jsonify({"success": False, "error": str(e)}), 409
+        err_msg = str(e)
+        status_code = 409 if "already exists" in err_msg.lower() else 400
+        return jsonify({"success": False, "error": err_msg}), status_code
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
